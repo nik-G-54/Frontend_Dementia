@@ -1,176 +1,162 @@
-import { Card, CardLabel, CardBigValue, SectionTitle, MiniLabel } from "../components/ui/Card"
-import { Badge } from "../components/ui/Badge"
-import { TaskItem } from "../components/ui/TaskItem"
+import React from 'react';
+import ScoreCard from '../components/widgets/ScoreCard';
+import { ProgressChart } from '../components/charts/ProgressChart';
+import DailyProgressCalendar from '../components/widgets/DailyProgressCalendar';
+import TasksListWidget from '../components/widgets/TasksListWidget';
 
-function Heatmap() {
-  const colors = [
-    "var(--color-background-secondary)",
-    "#E1F5EE",
-    "#9FE1CB",
-    "#1D9E75",
-    "#0F6E56"
-  ];
-  
-  // Generate random data for demo
-  const days = Array.from({ length: 365 }, () => {
-    const v = Math.random();
-    return v < 0.3 ? 0 : v < 0.55 ? 1 : v < 0.75 ? 2 : v < 0.9 ? 3 : 4;
-  });
-
-  return (
-    <div className="flex gap-[3px] flex-wrap mt-1">
-      {days.map((val, i) => (
-        <div 
-          key={i} 
-          className="w-3 h-3 rounded-[2px]" 
-          style={{ backgroundColor: colors[val] }}
-        />
-      ))}
-    </div>
-  )
-}
+const chartData = [
+  { name: 'Mon', risk: 0.25, memory: 65 },
+  { name: 'Tue', risk: 0.22, memory: 70 },
+  { name: 'Wed', risk: 0.23, memory: 68 },
+  { name: 'Thu', risk: 0.20, memory: 75 },
+  { name: 'Fri', risk: 0.18, memory: 80 },
+  { name: 'Sat', risk: 0.15, memory: 85 },
+  { name: 'Sun', risk: 0.16, memory: 82 }
+];
 
 export default function Dashboard() {
+  const userName = localStorage.getItem('userName') || 'Friend';
+
   return (
-    <div className="w-full">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 mb-3">
-        <Card>
-          <CardLabel>Risk level</CardLabel>
-          <CardBigValue className="text-[#1D9E75]">Low</CardBigValue>
-          <div className="mt-1">
-            <Badge variant="low">Stage 0 — Normal</Badge>
-          </div>
-        </Card>
+    <div className="w-full max-w-7xl mx-auto space-y-6">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-3xl p-8 text-white shadow-lg overflow-hidden relative">
+        {/* Decorative background shapes */}
+        <div className="absolute -top-24 -right-24 w-64 h-64 bg-white opacity-10 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-indigo-400 opacity-20 rounded-full blur-3xl"></div>
         
-        <Card>
-          <CardLabel>Risk score</CardLabel>
-          <CardBigValue>0.22</CardBigValue>
-          <MiniLabel className="mt-1 block">out of 1.0</MiniLabel>
-        </Card>
-        
-        <Card>
-          <CardLabel>Trend (7 days)</CardLabel>
-          <CardBigValue className="text-[#1D9E75]">+0.01</CardBigValue>
-          <MiniLabel className="mt-1 block">Slight improvement</MiniLabel>
-        </Card>
-        
-        <Card>
-          <CardLabel>Task streak</CardLabel>
-          <CardBigValue>12 days</CardBigValue>
-          <MiniLabel className="mt-1 block">Keep it up!</MiniLabel>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 mb-3">
-        <Card>
-          <SectionTitle>Risk score — 30 days</SectionTitle>
-          <div className="relative h-[110px] mt-1.5">
-            <svg viewBox="0 0 300 90" preserveAspectRatio="none" className="w-full h-full">
-              <polyline fill="none" stroke="#6d5cf7" strokeWidth="1.5" points="0,60 15,55 30,58 45,52 60,54 75,50 90,48 105,45 120,47 135,42 150,44 165,40 180,43 195,38 210,40 225,36 240,38 255,34 270,32 285,30 300,28"/>
-              <polygon fill="#6d5cf7" fillOpacity="0.08" points="0,60 15,55 30,58 45,52 60,54 75,50 90,48 105,45 120,47 135,42 150,44 165,40 180,43 195,38 210,40 225,36 240,38 255,34 270,32 285,30 300,28 300,90 0,90"/>
-              <line x1="0" y1="72" x2="300" y2="72" stroke="rgba(0,0,0,0.1)" strokeWidth="0.5"/>
-              <text x="0" y="88" style={{fontSize: "9px", fill: "#888780"}}>30d ago</text>
-              <text x="240" y="88" style={{fontSize: "9px", fill: "#888780"}}>Today</text>
-              <text x="246" y="26" style={{fontSize: "9px", fill: "#6d5cf7", fontWeight: 500}}>0.22</text>
-            </svg>
-          </div>
-          
-          <MiniLabel className="mt-2 block">MCI stage</MiniLabel>
-          <div className="flex gap-1 mt-2">
-            <div className="flex-1 h-1.5 rounded-full bg-[#1D9E75]"></div>
-            <div className="flex-1 h-1.5 rounded-full bg-[var(--color-background-secondary)]"></div>
-            <div className="flex-1 h-1.5 rounded-full bg-[var(--color-background-secondary)]"></div>
-            <div className="flex-1 h-1.5 rounded-full bg-[var(--color-background-secondary)]"></div>
-          </div>
-          <div className="flex justify-between mt-1">
-            <MiniLabel>Stage 0</MiniLabel>
-            <MiniLabel>Stage 3</MiniLabel>
-          </div>
-        </Card>
-
-        <Card>
-          <SectionTitle>Memory performance — last 7 tests</SectionTitle>
-          <div className="mb-3 space-y-1.5">
-            <div className="flex items-center gap-2">
-              <MiniLabel className="w-20 text-right">Memory Mosaic</MiniLabel>
-              <div className="flex-1 h-2 bg-[var(--color-background-secondary)] rounded-full overflow-hidden">
-                <div className="h-full rounded-full bg-[#6d5cf7]" style={{width: "84%"}}></div>
-              </div>
-              <MiniLabel>0.84</MiniLabel>
-            </div>
-            <div className="flex items-center gap-2">
-              <MiniLabel className="w-20 text-right">Word Garden</MiniLabel>
-              <div className="flex-1 h-2 bg-[var(--color-background-secondary)] rounded-full overflow-hidden">
-                <div className="h-full rounded-full bg-[#1D9E75]" style={{width: "72%"}}></div>
-              </div>
-              <MiniLabel>0.72</MiniLabel>
-            </div>
-            <div className="flex items-center gap-2">
-              <MiniLabel className="w-20 text-right">Path Finder</MiniLabel>
-              <div className="flex-1 h-2 bg-[var(--color-background-secondary)] rounded-full overflow-hidden">
-                <div className="h-full rounded-full bg-[#3B8BD4]" style={{width: "68%"}}></div>
-              </div>
-              <MiniLabel>0.68</MiniLabel>
-            </div>
-          </div>
-          
-          <SectionTitle>Typing speed trend (WPM)</SectionTitle>
-          <div className="relative h-[70px]">
-            <svg viewBox="0 0 300 60" preserveAspectRatio="none" className="w-full h-full">
-              <polyline fill="none" stroke="#1D9E75" strokeWidth="1.5" points="0,40 50,36 100,38 150,30 200,32 250,28 300,25"/>
-              <polygon fill="#1D9E75" fillOpacity="0.08" points="0,40 50,36 100,38 150,30 200,32 250,28 300,25 300,60 0,60"/>
-              <text x="256" y="22" style={{fontSize: "9px", fill: "#1D9E75", fontWeight: 500}}>42 WPM</text>
-            </svg>
-          </div>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 mb-3">
-        <Card>
-          <div className="flex justify-between items-center mb-1.5">
-            <SectionTitle className="mb-0">Today's tasks</SectionTitle>
-            <MiniLabel>3 / 5 done</MiniLabel>
-          </div>
-          
-          <div className="flex flex-col">
-            <TaskItem done dotColor="#6d5cf7" label="Complete today's brain activity" />
-            <TaskItem done dotColor="#1D9E75" label="Check in with your companion" />
-            <TaskItem done dotColor="#3B8BD4" label="5-minute gentle stretching" />
-            <TaskItem done={false} dotColor="#EF9F27" label="Name 5 things you can see right now" />
-            <TaskItem done={false} dotColor="#1D9E75" label="Call a family member today" />
-          </div>
-        </Card>
-
-        <Card>
-          <SectionTitle>Activity — last 52 weeks</SectionTitle>
-          <Heatmap />
-          <div className="flex gap-1 mt-2 items-center">
-            <MiniLabel>Less</MiniLabel>
-            <div className="w-3 h-3 rounded-[2px] bg-[var(--color-background-secondary)]"></div>
-            <div className="w-3 h-3 rounded-[2px] bg-[#9FE1CB]"></div>
-            <div className="w-3 h-3 rounded-[2px] bg-[#1D9E75]"></div>
-            <div className="w-3 h-3 rounded-[2px] bg-[#0F6E56]"></div>
-            <MiniLabel>More</MiniLabel>
-          </div>
-        </Card>
-      </div>
-
-      <Card>
-        <SectionTitle>Today's analysis</SectionTitle>
-        <div className="bg-[var(--color-background-secondary)] border-[0.5px] border-[var(--color-border-secondary)] rounded-lg px-3 py-2.5 text-xs text-[var(--color-text-secondary)] mt-2.5 leading-relaxed">
-          Your cognitive patterns today suggest normal function for your age group (67). Memory recall scored above the 70th percentile for the 66–75 age band. Typing rhythm shows consistent speed with low backspace rate (8%) — a positive signal. Facial expression analysis detected calm engagement. No urgent concerns flagged. Continue your daily routine and test again tomorrow.
+        <div className="relative z-10">
+          <h1 className="text-3xl font-extrabold tracking-tight mb-2">Welcome back, {userName}! 👋</h1>
+          <p className="text-blue-100 max-w-xl text-sm leading-relaxed">
+            Your cognitive patterns today suggest normal function for your age group. Keep up the great work with your daily exercises to maintain neuroplasticity.
+          </p>
         </div>
         
-        <div className="mt-2.5 flex gap-2 flex-wrap">
-          <Badge variant="low" className="px-2.5 py-1 text-xs">Game: Low risk</Badge>
-          <Badge variant="low" className="px-2.5 py-1 text-xs">Chat: Low risk</Badge>
-          <Badge variant="low" className="px-2.5 py-1 text-xs">Webcam: Low risk</Badge>
+        <div className="relative z-10 flex gap-3">
+          <button className="bg-white/20 hover:bg-white/30 backdrop-blur text-white px-5 py-2.5 rounded-xl font-semibold transition-all">
+            View Report
+          </button>
+          <button className="bg-white text-indigo-600 hover:bg-gray-50 px-5 py-2.5 rounded-xl font-bold shadow-sm transition-all transform hover:scale-105">
+            Start Training
+          </button>
         </div>
+      </div>
+
+      {/* KPI Stats Row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <ScoreCard 
+          title="Overall Risk Score" 
+          score="0.16" 
+          total="1.0"
+          subtitle="Stage 0 — Normal Cognitive Function" 
+          icon="🛡️" 
+          colorClass={{ bg: 'bg-green-100 text-green-600 dark:bg-green-900/30' }}
+          trendText="-0.04 this week"
+        />
+        <ScoreCard 
+          title="Average Game Score" 
+          score="84" 
+          total="100"
+          subtitle="Top 15% for your age group" 
+          icon="🎮" 
+          colorClass={{ bg: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30' }}
+          trendText="+5% from last week"
+        />
+        <ScoreCard 
+          title="Chat Health Index" 
+          score="92" 
+          total="100"
+          subtitle="High linguistic coherence & recall" 
+          icon="💬" 
+          colorClass={{ bg: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30' }}
+        />
+        <ScoreCard 
+          title="Webcam Emotion Score" 
+          score="Calm" 
+          subtitle="Consistent positive baseline detected" 
+          icon="📷" 
+          colorClass={{ bg: 'bg-amber-100 text-amber-600 dark:bg-amber-900/30' }}
+        />
+      </div>
+
+      {/* Middle Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        <p className="text-[11px] text-[var(--color-text-tertiary)] mt-2 italic">
-          This tool provides risk indicators only. It is not a medical diagnosis. Please consult a healthcare professional.
-        </p>
-      </Card>
+        {/* Left Column: Calendar & Tasks */}
+        <div className="lg:col-span-1 space-y-6">
+          <DailyProgressCalendar />
+          
+          <div className="h-[400px]">
+            <TasksListWidget />
+          </div>
+        </div>
+
+        {/* Right Column: Charts & Analysis */}
+        <div className="lg:col-span-2 space-y-6 flex flex-col">
+          
+          <ProgressChart 
+            title="Memory Performance Trend" 
+            data={chartData} 
+            dataKey="memory" 
+            gradientColor="#3B82F6" 
+          />
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Detailed Analysis</h3>
+              <div className="space-y-4">
+                <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-700">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-lg">⌨️</span>
+                    <h4 className="font-semibold text-gray-800 dark:text-gray-200 text-sm">Typing Rhythm</h4>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                    Consistent speed with low backspace rate (8%). Fine motor skills remain stable.
+                  </p>
+                </div>
+                
+                <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-700">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-lg">🧠</span>
+                    <h4 className="font-semibold text-gray-800 dark:text-gray-200 text-sm">Short-term Memory</h4>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                    Scored above the 70th percentile for the 66-75 age band in today's Sequence Game.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-gray-800 dark:to-gray-800 rounded-2xl p-6 shadow-sm border border-indigo-100 dark:border-gray-700 relative overflow-hidden">
+               {/* Illustration graphic abstraction */}
+              <div className="absolute right-0 bottom-0 opacity-20 dark:opacity-10 transform translate-x-1/4 translate-y-1/4">
+                <svg width="150" height="150" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M50 0C77.6142 0 100 22.3858 100 50C100 77.6142 77.6142 100 50 100C22.3858 100 0 77.6142 0 50C0 22.3858 22.3858 0 50 0Z" fill="#818CF8"/>
+                  <circle cx="30" cy="30" r="10" fill="white"/>
+                  <circle cx="70" cy="70" r="15" fill="white"/>
+                  <circle cx="20" cy="80" r="5" fill="white"/>
+                </svg>
+              </div>
+
+              <h3 className="text-lg font-bold text-indigo-900 dark:text-indigo-400 mb-2 relative z-10">Doctor's Note</h3>
+              <p className="text-sm text-indigo-800/80 dark:text-gray-300 relative z-10 leading-relaxed mt-4">
+                "Your test consistency this month is excellent. We are seeing sustained baseline stability in your reaction times. Keep up the daily check-ins — the AI chatbot is picking up very positive grammatical structures."
+              </p>
+              
+              <div className="mt-6 flex items-center gap-3 relative z-10">
+                <div className="w-10 h-10 rounded-full bg-indigo-200 border-2 border-white shadow-sm flex items-center justify-center font-bold text-indigo-700">
+                  Dr
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-indigo-900 dark:text-gray-200">Dr. Sarah Jenkins</div>
+                  <div className="text-[10px] text-indigo-600 dark:text-gray-400">Neurologist</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
     </div>
-  )
+  );
 }
