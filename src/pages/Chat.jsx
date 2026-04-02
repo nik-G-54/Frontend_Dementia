@@ -4,21 +4,8 @@ import { useChatTracker } from '../hooks/useChatTracker'
 import api from '../api/axiosInstance'
 
 /* ───────── SVG Icons ───────── */
-const MicIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="9" y="2" width="6" height="12" rx="3" />
-    <path d="M5 10a7 7 0 0 0 14 0" />
-    <line x1="12" y1="22" x2="12" y2="17" />
-  </svg>
-)
-const MicOffIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="9" y="2" width="6" height="12" rx="3" />
-    <path d="M5 10a7 7 0 0 0 14 0" />
-    <line x1="12" y1="22" x2="12" y2="17" />
-    <line x1="2" y1="2" x2="22" y2="22" stroke="#e53e3e" strokeWidth="2.5" />
-  </svg>
-)
+
+
 const SendIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <line x1="22" y1="2" x2="11" y2="13" />
@@ -109,6 +96,8 @@ export default function Chat() {
   const [sessionTimer, setSessionTimer] = useState(0)
   const [isListening, setIsListening] = useState(false)
   const [sessionEnded, setSessionEnded] = useState(false)
+  const [language, setLanguage] = useState('english')
+  const [isProgressOpen, setIsProgressOpen] = useState(false)
 
   const messagesEndRef = useRef(null)
   const textareaRef = useRef(null)
@@ -141,16 +130,11 @@ export default function Chat() {
   useEffect(() => {
     async function init() {
       // Speak greeting
-      if ('speechSynthesis' in window) {
-        const utter = new SpeechSynthesisUtterance('Good morning. Your companion is ready to chat.')
-        utter.rate = 0.9
-        window.speechSynthesis.speak(utter)
-      }
-      // Fetch first bot message
+            // Fetch first bot message
       setIsTyping(true)
       try {
         const res = await api.post('/chat/message', {
-          messages: [{ role: 'user', content: 'hello' }]
+          messages: [{ role: 'user', content: 'hello' }], language
         })
         const { reply } = res.data
         setMessages([{ role: 'assistant', content: reply }])
@@ -198,7 +182,7 @@ export default function Chat() {
 
     try {
       const res = await api.post('/chat/message', {
-        messages: updatedMessages
+        messages: updatedMessages, language
       })
       const { reply } = res.data
       setMessages(prev => [...prev, { role: 'assistant', content: reply }])
@@ -216,7 +200,7 @@ export default function Chat() {
   /* ── Keyboard shortcut ── */
   const handleKeyDown = useCallback((e) => {
     onKeyDown(e)
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    if (!e.shiftKey && e.key === 'Enter') {
       e.preventDefault()
       handleSend()
     }
@@ -227,38 +211,6 @@ export default function Chat() {
     setInputText(e.target.value)
     e.target.style.height = 'auto'
     e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'
-  }
-
-  /* ── Voice input ── */
-  const toggleVoice = () => {
-    if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
-      alert('Speech recognition is not supported in this browser.')
-      return
-    }
-
-    if (isListening) {
-      recognitionRef.current?.stop()
-      setIsListening(false)
-      return
-    }
-
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
-    const recognition = new SpeechRecognition()
-    recognition.continuous = false
-    recognition.interimResults = false
-    recognition.lang = 'en-US'
-
-    recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript
-      setInputText(prev => prev + transcript)
-      setIsListening(false)
-    }
-    recognition.onerror = () => setIsListening(false)
-    recognition.onend = () => setIsListening(false)
-
-    recognitionRef.current = recognition
-    recognition.start()
-    setIsListening(true)
   }
 
   /* ── End session ── */
@@ -342,32 +294,67 @@ export default function Chat() {
           from { opacity: 0; transform: translateY(12px); }
           to { opacity: 1; transform: translateY(0); }
         }
+        
         .chat-grid {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 20px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          max-width: 900px;
+          margin: 0 auto;
         }
-        @media (min-width: 1024px) {
-          .chat-grid {
-            grid-template-columns: 3fr 2fr;
-          }
+        .slide-panel {
+          position: fixed;
+          top: 0; right: 0; bottom: 0;
+          width: 400px;
+          max-width: 100vw;
+          background: #faf9f7;
+          border-left: 1px solid rgba(0,0,0,0.1);
+          box-shadow: -10px 0 30px rgba(0,0,0,0.06);
+          transform: translateX(100%);
+          transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          z-index: 100;
+          overflow-y: auto;
+          padding: 24px;
+        }
+        .slide-panel.open {
+          transform: translateX(0);
+        }
+        .overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.4);
+          z-index: 99;
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 0.3s;
+        }
+        .overlay.open {
+          opacity: 1;
+          pointer-events: auto;
         }
       `}</style>
 
       <div className="chat-grid">
         {/* ════════════ LEFT: CHAT ════════════ */}
-        <div style={styles.leftCol}>
+        <div style={{ ...styles.leftCol, width: "100%" }}>
           <div style={styles.card}>
             {/* Header */}
             <div style={styles.chatHeader}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <h1 style={{ fontSize: 16, fontWeight: 500, margin: 0 }}>Daily check-in</h1>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <span style={{
-                    width: 8, height: 8, borderRadius: '50%', backgroundColor: '#22c55e',
-                    display: 'inline-block', animation: 'pulse 2s infinite'
-                  }} />
-                  <span style={{ fontSize: 13, color: '#22c55e', fontWeight: 500 }}>Active</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <select value={language} onChange={e => setLanguage(e.target.value)} style={{ padding: '6px 12px', outline: 'none', borderRadius: 8, border: '1px solid rgba(0,0,0,0.1)', background: '#f5f4f0', fontSize: 14, fontWeight: 500, color: '#5f5e5a' }}>
+                    <option value="english">English</option>
+                    <option value="hindi">Hindi</option>
+                    <option value="hinglish">Hinglish</option>
+                  </select>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <span style={{
+                      width: 8, height: 8, borderRadius: '50%', backgroundColor: '#22c55e',
+                      display: 'inline-block', animation: 'pulse 2s infinite'
+                    }} />
+                    <span style={{ fontSize: 13, color: '#22c55e', fontWeight: 500 }}>Active</span>
+                  </div>
                 </div>
               </div>
               <div style={{ fontSize: 16, fontWeight: 500, color: '#5f5e5a', fontVariantNumeric: 'tabular-nums' }}>
@@ -406,17 +393,7 @@ export default function Chat() {
             {/* Input area */}
             <div style={styles.inputArea}>
               <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
-                <button
-                  onClick={toggleVoice}
-                  aria-label={isListening ? 'Stop voice input' : 'Start voice input'}
-                  style={{
-                    ...styles.iconBtn,
-                    backgroundColor: isListening ? '#fcebeb' : '#f5f4f0',
-                    color: isListening ? '#e53e3e' : '#5f5e5a'
-                  }}
-                >
-                  {isListening ? <MicOffIcon /> : <MicIcon />}
-                </button>
+                
 
                 <textarea
                   ref={textareaRef}
@@ -446,7 +423,7 @@ export default function Chat() {
               </div>
 
               <p style={styles.hintText}>
-                Ctrl+Enter to send · Session ends automatically after 10 minutes
+                Press Enter to send · Session ends automatically after 10 minutes
               </p>
             </div>
 
@@ -515,7 +492,15 @@ export default function Chat() {
           </div>
         </div>
 
-        {/* ════════════ RIGHT: METRICS ════════════ */}
+        
+        {/* PROGRESS DIALOG */}
+        <div className={`overlay ${isProgressOpen ? 'open' : ''}`} onClick={() => setIsProgressOpen(false)} />
+        <div className={`slide-panel ${isProgressOpen ? 'open' : ''}`}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+            <h2 style={{ fontSize: 20, margin: 0 }}>Progress Report</h2>
+            <button onClick={() => setIsProgressOpen(false)} style={{ background: '#fcebeb', color: '#e53e3e', border: 'none', borderRadius: '50%', width: 32, height: 32, fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div style={styles.rightCol}>
           {/* Metric cards 2×2 */}
           <div style={styles.card}>
@@ -581,6 +566,15 @@ export default function Chat() {
             We measure typing patterns to support cognitive wellness.
             Your messages are never stored after analysis is complete.
           </div>
+          </div>
+          </div>
+        </div> {/* end slide-panel */}
+
+        {/* BOTTOM PROGRESS BUTTON */}
+        <div style={{ width: '100%', marginTop: 12 }}>
+           <button onClick={() => setIsProgressOpen(true)} style={{ width: '100%', padding: 20, background: '#f5f4f0', border: '2px dashed #ccc', borderRadius: 12, fontSize: 18, color: '#5f5e5a', cursor: 'pointer', fontWeight: 600 }}>
+             View Live Metrics & Progress Report
+           </button>
         </div>
       </div>
     </div>
@@ -665,19 +659,19 @@ const styles = {
   botBubble: {
     backgroundColor: '#f5f4f0',
     color: '#1a1a18',
-    padding: '12px 16px',
-    borderRadius: '12px 12px 12px 3px',
-    borderLeft: '3px solid #6d5cf7',
-    fontSize: 16,
+    padding: '18px 24px',
+    borderRadius: '16px 16px 16px 4px',
+    borderLeft: '4px solid #6d5cf7',
+    fontSize: 20,
     lineHeight: 1.55,
     maxWidth: 480,
   },
   userBubble: {
     backgroundColor: '#E6F1FB',
     color: '#185fa5',
-    padding: '12px 16px',
-    borderRadius: '12px 12px 3px 12px',
-    fontSize: 16,
+    padding: '18px 24px',
+    borderRadius: '16px 16px 4px 16px',
+    fontSize: 20,
     lineHeight: 1.55,
     maxWidth: 480,
     marginLeft: 'auto',
@@ -695,7 +689,7 @@ const styles = {
   },
   iconBtn: {
     width: 44,
-    height: 44,
+    height: 60,
     minWidth: 44,
     borderRadius: 10,
     border: 'none',
@@ -707,25 +701,25 @@ const styles = {
   },
   textarea: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 20,
     lineHeight: 1.5,
-    padding: '10px 14px',
+    padding: '16px 20px',
     border: '1px solid rgba(0,0,0,0.15)',
     borderRadius: 10,
     resize: 'none',
     outline: 'none',
     fontFamily: 'inherit',
     backgroundColor: '#faf9f7',
-    minHeight: 44,
+    minHeight: 60,
   },
   sendBtn: {
-    height: 44,
+    height: 60,
     minWidth: 90,
     backgroundColor: '#6d5cf7',
     color: '#ffffff',
     border: 'none',
     borderRadius: 10,
-    fontSize: 15,
+    fontSize: 18,
     fontWeight: 500,
     cursor: 'pointer',
     display: 'flex',
@@ -747,7 +741,7 @@ const styles = {
     color: '#6d5cf7',
     border: '1.5px solid #6d5cf7',
     borderRadius: 10,
-    fontSize: 15,
+    fontSize: 18,
     fontWeight: 500,
     cursor: 'pointer',
     transition: 'background-color 0.15s, color 0.15s',

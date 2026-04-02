@@ -40,10 +40,14 @@ const GAME_STYLES = `
   }
   .cg-game-card {
     background: #fff;
-    border-radius: 16px;
+    border-radius: 20px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
-    padding: 28px;
-    max-width: 700px;
+    padding: 40px;
+    max-width: 90vw;
+    min-height: 60vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
     margin: 0 auto;
     width: 100%;
   }
@@ -84,7 +88,7 @@ const GAME_STYLES = `
 const BASE = import.meta.env?.VITE_API_URL || "http://localhost:5000";
 const getToken = () => localStorage.getItem("token") || "";
 const GAME_TO_TEST_TYPE = {
-  reaction: "path_finder", sequence: "memory_mosaic", number: "word_garden",
+  reaction: "path_finder", number: "word_garden",
   verbal: "color_word", chimp: "word_scramble", target: "memory_mosaic",
 };
 
@@ -109,7 +113,6 @@ const MAX_LIVES = 5;
 
 const ALL_GAMES = [
   { id: "reaction", title: "Reaction Time",   icon: "⚡", iconBg: "#dcfce7", iconColor: "#16a34a", desc: "Test how quickly you can respond to a visual stimulus. Average human reaction time is around 250ms." },
-  { id: "sequence", title: "Sequence Memory",  icon: "⊞",  iconBg: "#ede9fe", iconColor: "#7c3aed", desc: "Test your working memory by memorizing and replaying patterns on a 3×3 grid. Sequences get longer each level." },
   { id: "number",   title: "Number Memory",    icon: "#",  iconBg: "#fce7f3", iconColor: "#db2777", desc: "Test your numerical memory by memorizing increasingly long numbers and typing them back." },
   { id: "verbal",   title: "Verbal Memory",    icon: "Aa", iconBg: "#dbeafe", iconColor: "#2563eb", desc: "Keep as many words in short-term memory as possible. You'll see words one at a time — decide if each is NEW or SEEN." },
   { id: "chimp",    title: "Chimp Test",       icon: "🐵", iconBg: "#fef9c3", iconColor: "#ca8a04", desc: "Click the numbers in ascending order. After clicking '1', all other numbers become hidden. Beat the chimps!" },
@@ -157,14 +160,21 @@ function LivesBar({ lives, max = MAX_LIVES }) {
 
 /* ─── Instruction Screen (before each game) ─── */
 function GameStartScreen({ game, onStart }) {
+  const [countdown, setCountdown] = useState(2);
+  useEffect(() => {
+    const t = setInterval(() => setCountdown(c => c > 0 ? c - 1 : 0), 1000);
+    const s = setTimeout(onStart, 2000);
+    return () => { clearInterval(t); clearTimeout(s); };
+  }, [onStart]);
+
   return (
     <div className="cg-game-card cg-modal-enter text-center">
-      <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-6"
+      <div className="w-32 h-32 rounded-3xl flex items-center justify-center text-6xl mx-auto mb-8"
            style={{ background: game.iconBg, color: game.iconColor }}>
         {game.icon}
       </div>
-      <h2 className="text-2xl font-bold text-gray-900 mb-2">{game.title}</h2>
-      <p className="text-gray-500 text-sm mb-6 max-w-md mx-auto">{game.desc}</p>
+      <h2 className="text-4xl font-bold text-gray-900 mb-4">{game.title}</h2>
+      <p className="text-gray-500 text-lg lg:text-xl mb-8 max-w-xl mx-auto">{game.desc}</p>
 
       <div className="cg-instruction-box text-left">
         <strong>How to play:</strong><br />
@@ -176,14 +186,21 @@ function GameStartScreen({ game, onStart }) {
         {game.id === "target" && "Click the red target as fast as you can. 15 rounds total."}
       </div>
 
-      <button className="cg-gradient-btn" onClick={onStart}>Start Game</button>
+      <button className="cg-gradient-btn text-2xl py-6" onClick={onStart}>Start Game ({countdown})</button>
     </div>
   );
 }
 
 /* ─── Result Screen ─── */
-function ResultScreen({ game, result, onPlayAgain, onGoBack }) {
+function ResultScreen({ game, result, onPlayAgain, onGoBack, onNext }) {
   const [apiMsg, setApiMsg] = useState("Saving...");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (onNext) onNext();
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [onNext]);
 
   useEffect(() => {
     saveDayScore(game.id, result.score, result.errors || 0);
@@ -263,6 +280,8 @@ function ReactionTimeGame({ onGameOver }) {
   const [phase, setPhase] = useState("idle"); // idle, waiting, ready, tooearly, result
   const [round, setRound] = useState(0);
   const [times, setTimes] = useState([]);
+  const [lives, setLives] = useState(MAX_LIVES);
+  const [errors, setErrors] = useState(0);
   const startRef = useRef(null);
   const timerRef = useRef(null);
   const gameStart = useRef(Date.now());
@@ -278,7 +297,19 @@ function ReactionTimeGame({ onGameOver }) {
     if (phase === "waiting") {
       clearTimeout(timerRef.current);
       setPhase("tooearly");
-      setTimeout(() => startRound(), 1200);
+      const newLives = lives - 1;
+      setLives(newLives);
+      const newErrors = errors + 1;
+      setErrors(newErrors);
+      if (newLives <= 0) {
+        setTimeout(() => {
+          const avg = times.length > 0 ? Math.round(times.reduce((a, b) => a + b, 0) / times.length) : 0;
+          const score = avg ? Math.max(0, Math.round((1000 - avg) / 50)) : 0;
+          onGameOver({ score, displayScore: `${avg || 0}ms`, unit: "average", errors: newErrors, level: round, reactionTime: avg, duration: Date.now() - gameStart.current });
+        }, 1200);
+      } else {
+        setTimeout(() => startRound(), 1200);
+      }
       return;
     }
     if (phase === "ready") {
@@ -293,7 +324,7 @@ function ReactionTimeGame({ onGameOver }) {
         const score = Math.max(0, Math.round((1000 - avg) / 50));
         setTimeout(() => onGameOver({
           score, displayScore: `${avg}ms`, unit: "average",
-          errors: 0, level: TOTAL_ROUNDS, reactionTime: avg,
+          errors: errors, level: TOTAL_ROUNDS, reactionTime: avg,
           duration: Date.now() - gameStart.current
         }), 600);
       } else {
@@ -314,18 +345,24 @@ function ReactionTimeGame({ onGameOver }) {
   };
 
   return (
-    <div onClick={handleClick}
-         className="rounded-2xl flex items-center justify-center flex-col cursor-pointer select-none transition-colors duration-300"
-         style={{ background: bgColors[phase], minHeight: 340, color: phase === "idle" ? "#374151" : "#fff" }}>
-      <div className="text-4xl font-extrabold mb-2">{texts[phase].main}</div>
-      <div className="text-sm opacity-80">{texts[phase].sub}</div>
-      {times.length > 0 && phase !== "result" && (
-        <div className="mt-4 flex gap-2 flex-wrap justify-center">
-          {times.map((ms, i) => (
-            <span key={i} className="bg-white/20 px-3 py-1 rounded-full text-xs font-semibold">{ms}ms</span>
-          ))}
-        </div>
-      )}
+    <div className="w-full flex flex-col">
+      <div className="flex items-center justify-between mb-4 px-1">
+        <span className="text-sm font-semibold text-gray-500">Round {Math.max(1, round)} of {TOTAL_ROUNDS}</span>
+        <LivesBar lives={lives} max={MAX_LIVES} />
+      </div>
+      <div onClick={handleClick}
+           className="rounded-2xl flex items-center justify-center flex-col cursor-pointer select-none transition-colors duration-300 w-full"
+           style={{ background: bgColors[phase], minHeight: "65vh", color: phase === "idle" ? "#374151" : "#fff" }}>
+        <div className="text-6xl md:text-8xl font-extrabold mb-6">{texts[phase].main}</div>
+        <div className="text-2xl mt-4 opacity-80">{texts[phase].sub}</div>
+        {times.length > 0 && phase !== "result" && (
+          <div className="mt-4 flex gap-2 flex-wrap justify-center">
+            {times.map((ms, i) => (
+              <span key={i} className="bg-white/20 px-3 py-1 rounded-full text-xs font-semibold">{ms}ms</span>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -341,6 +378,8 @@ function SequenceMemoryGame({ onGameOver }) {
   const [userSeq, setUserSeq] = useState([]);
   const [level, setLevel] = useState(1);
   const [score, setScore] = useState(0);
+  const [lives, setLives] = useState(MAX_LIVES);
+  const [errors, setErrors] = useState(0);
   const timerRef = useRef(null);
   const gameStart = useRef(Date.now());
 
@@ -383,9 +422,20 @@ function SequenceMemoryGame({ onGameOver }) {
       }
     } else {
       setTiles(t => { const n = [...t]; n[idx] = "wrong"; return n; });
-      setTimeout(() => {
-        onGameOver({ score, level, errors: 1, duration: Date.now() - gameStart.current });
-      }, 500);
+      const newLives = lives - 1;
+      setLives(newLives);
+      const newErrors = errors + 1;
+      setErrors(newErrors);
+
+      if (newLives <= 0) {
+        setTimeout(() => {
+          onGameOver({ score, level, errors: newErrors, duration: Date.now() - gameStart.current });
+        }, 500);
+      } else {
+        setTimeout(() => {
+          playSequence(sequence);
+        }, 1000);
+      }
     }
   }
 
@@ -403,11 +453,14 @@ function SequenceMemoryGame({ onGameOver }) {
 
   return (
     <div>
-      <div className="text-center mb-4">
-        <span className="text-sm font-semibold text-gray-500">Level {level}</span>
-        <span className="text-xs text-gray-400 ml-3">{phase === "watch" ? "Watch carefully..." : "Your turn!"}</span>
+      <div className="flex items-center justify-between mb-4 px-1">
+        <div>
+          <span className="text-sm font-semibold text-gray-500">Level {level}</span>
+          <span className="text-xs text-gray-400 ml-3">{phase === "watch" ? "Watch carefully..." : "Your turn!"}</span>
+        </div>
+        <LivesBar lives={lives} max={MAX_LIVES} />
       </div>
-      <div className="grid grid-cols-3 gap-3 max-w-[340px] mx-auto">
+      <div className="grid grid-cols-3 gap-6 max-w-[650px] w-full mx-auto aspect-square">
         {tiles.map((state, i) => (
           <div key={i} onClick={() => handleTile(i)}
                className="aspect-square rounded-xl"
@@ -430,6 +483,8 @@ function NumberMemoryGame({ onGameOver }) {
   const [score, setScore] = useState(0);
   const [level, setLevel] = useState(1);
   const [progress, setProgress] = useState(100);
+  const [lives, setLives] = useState(MAX_LIVES);
+  const [errors, setErrors] = useState(0);
   const timerRef = useRef(null);
   const gameStart = useRef(Date.now());
 
@@ -465,19 +520,34 @@ function NumberMemoryGame({ onGameOver }) {
       setTimeout(() => startRound(nextD), 900);
     } else {
       setPhase("wrong");
-      setTimeout(() => {
-        onGameOver({ score, level, errors: 1, displayScore: `Level ${level}`, unit: "level reached", duration: Date.now() - gameStart.current });
-      }, 1200);
+      const newLives = lives - 1;
+      setLives(newLives);
+      const newErrors = errors + 1;
+      setErrors(newErrors);
+
+      if (newLives <= 0) {
+        setTimeout(() => {
+          onGameOver({ score, level, errors: newErrors, displayScore: `Level ${level}`, unit: "level reached", duration: Date.now() - gameStart.current });
+        }, 1200);
+      } else {
+        setTimeout(() => {
+          startRound(digits);
+        }, 1500);
+      }
     }
   }
 
   return (
     <div>
+      <div className="flex items-center justify-between mb-4 px-1">
+        <span className="text-sm font-semibold text-gray-500">Level {level}</span>
+        <LivesBar lives={lives} max={MAX_LIVES} />
+      </div>
       {phase === "show" && (
         <div className="text-center">
           <div className="text-xs text-gray-400 mb-1">Memorize this number</div>
-          <div className="text-5xl font-extrabold text-gray-900 cg-number-pop tracking-widest my-6 font-mono">{number}</div>
-          <div className="h-2 bg-gray-200 rounded-full overflow-hidden max-w-sm mx-auto">
+          <div className="text-7xl md:text-9xl font-extrabold text-gray-900 cg-number-pop tracking-widest my-14 h-[25vh] flex items-center justify-center font-mono">{number}</div>
+          <div className="h-3 bg-gray-200 rounded-full overflow-hidden max-w-2xl mx-auto">
             <div className="h-full bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full transition-all duration-50"
                  style={{ width: `${progress}%` }} />
           </div>
@@ -492,7 +562,7 @@ function NumberMemoryGame({ onGameOver }) {
           <input type="number" autoFocus value={input}
                  onChange={e => setInput(e.target.value)}
                  onKeyDown={e => e.key === "Enter" && handleSubmit()}
-                 className="w-full max-w-sm mx-auto block border-2 border-blue-300 rounded-xl px-4 py-3 text-lg font-mono text-center outline-none focus:border-indigo-500 transition-colors mb-4"
+                 className="w-full max-w-2xl mx-auto block border-4 border-blue-300 rounded-2xl px-6 py-5 text-4xl text-gray-900 font-mono text-center outline-none focus:border-indigo-500 transition-colors mb-6"
                  style={{ background: phase === "correct" ? "#dcfce7" : phase === "wrong" ? "#fee2e2" : "#fff" }} />
           {phase === "input" && (
             <button className="cg-gradient-btn max-w-sm mx-auto block" onClick={handleSubmit}>Submit</button>
@@ -581,23 +651,23 @@ function VerbalMemoryGame({ onGameOver }) {
       </div>
 
       {/* Word card */}
-      <div className="flex items-center justify-center rounded-2xl bg-white border-2 border-gray-200 shadow-sm mb-6"
+      <div className="flex items-center justify-center rounded-2xl bg-white border-2 border-gray-200 shadow-sm mb-6 w-full"
            style={{
-             minHeight: 180,
+             minHeight: "45vh",
              background: feedback === "correct" ? "#dcfce7" : feedback === "wrong" ? "#fee2e2" : "#fff",
              transition: "background 0.3s"
            }}>
-        <span className="text-3xl font-extrabold tracking-wider text-gray-900">{current}</span>
+        <span className="text-6xl md:text-8xl font-extrabold tracking-wider text-gray-900">{current}</span>
       </div>
 
       {/* Buttons */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-6 mt-4">
         <button onClick={() => handleAnswer("new")}
-                className="py-4 rounded-xl text-base font-bold border-2 border-blue-400 text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors">
+                className="py-10 rounded-2xl text-4xl font-bold border-4 border-blue-400 text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors">
           NEW
         </button>
         <button onClick={() => handleAnswer("seen")}
-                className="py-4 rounded-xl text-base font-bold border-2 border-indigo-400 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-colors">
+                className="py-10 rounded-2xl text-4xl font-bold border-4 border-indigo-400 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-colors">
           SEEN
         </button>
       </div>
@@ -620,13 +690,13 @@ function ChimpTestGame({ onGameOver }) {
 
   function generateSquares(count) {
     const positions = [];
-    const size = 60;
+    const size = 100; // Increased square logic size
     for (let i = 0; i < count; i++) {
       let x, y, overlap;
       let attempts = 0;
       do {
-        x = Math.random() * (500 - size);
-        y = Math.random() * (350 - size);
+        x = Math.random() * (800 - size);
+        y = Math.random() * (500 - size);
         overlap = positions.some(p => Math.abs(p.x - x) < size + 10 && Math.abs(p.y - y) < size + 10);
         attempts++;
       } while (overlap && attempts < 100);
@@ -672,14 +742,14 @@ function ChimpTestGame({ onGameOver }) {
         <span className="text-sm font-semibold text-gray-500">Numbers: {level}</span>
         <LivesBar lives={lives} max={3} />
       </div>
-      <div className="relative bg-gray-50 rounded-2xl border border-gray-200 overflow-hidden"
-           style={{ width: "100%", height: 350, maxWidth: 560, margin: "0 auto" }}>
+      <div className="relative bg-gray-50 rounded-2xl border border-gray-200 overflow-hidden w-full mx-auto"
+           style={{ height: "60vh", minHeight: 500, maxWidth: 900 }}>
         {squares.map(sq => !sq.clicked && (
           <div key={sq.num}
                onClick={() => handleSquareClick(sq.num)}
-               className="absolute flex items-center justify-center text-white font-bold text-lg rounded-xl cursor-pointer select-none transition-transform hover:scale-105"
+               className="absolute flex items-center justify-center text-white font-bold text-3xl rounded-xl cursor-pointer select-none transition-transform hover:scale-105 cg-number-pop"
                style={{
-                 left: sq.x, top: sq.y, width: 54, height: 54,
+                 left: sq.x, top: sq.y, width: 80, height: 80,
                  background: "linear-gradient(135deg, #60a5fa, #6366f1)",
                  boxShadow: "0 3px 10px rgba(99,102,241,0.3)",
                }}>
@@ -705,8 +775,8 @@ function TargetPracticeGame({ onGameOver }) {
   const areaRef = useRef(null);
 
   function placeTarget() {
-    const x = 40 + Math.random() * 480;
-    const y = 30 + Math.random() * 290;
+    const x = 50 + Math.random() * 800; // scaled for larger width
+    const y = 50 + Math.random() * 400; // scaled for larger height
     setTarget({ x, y });
     startRef.current = Date.now();
   }
@@ -737,19 +807,19 @@ function TargetPracticeGame({ onGameOver }) {
     <div>
       <div className="text-center text-sm font-semibold text-gray-300 mb-3">Round {round} / {TOTAL}</div>
       <div ref={areaRef}
-           className="relative rounded-2xl overflow-hidden"
-           style={{ background: "#0f172a", width: "100%", height: 360, maxWidth: 580, margin: "0 auto" }}>
+           className="relative rounded-2xl overflow-hidden shadow-inner"
+           style={{ background: "#0f172a", width: "100%", height: "60vh", minHeight: 500, maxWidth: 1000, margin: "0 auto" }}>
         {target && (
           <div onClick={handleTargetClick}
                className="absolute cursor-pointer"
                style={{
-                 left: target.x - 28, top: target.y - 28,
-                 width: 56, height: 56, borderRadius: "50%",
+                 left: target.x - 50, top: target.y - 50,
+                 width: 100, height: 100, borderRadius: "50%",
                  background: "radial-gradient(circle at 40% 38%, #f87171, #dc2626)",
-                 boxShadow: "0 0 20px rgba(220,38,38,0.5)",
+                 boxShadow: "0 0 24px rgba(220,38,38,0.5)",
                  display: "flex", alignItems: "center", justifyContent: "center",
                }}>
-            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#fff" }} />
+            <div style={{ width: 14, height: 14, borderRadius: "50%", background: "#fff" }} />
           </div>
         )}
       </div>
@@ -950,8 +1020,20 @@ export default function GamesPage() {
   function playAgain() { setPhase("start"); setResult(null); }
   function goHome() { setActiveGame(null); setPhase("home"); setResult(null); }
 
+  function playNext() {
+    const gameIndex = ALL_GAMES.findIndex(g => g.id === activeGame);
+    const nextGame = ALL_GAMES[gameIndex + 1];
+    if (nextGame) {
+      setActiveGame(nextGame.id);
+      setPhase("start");
+      setResult(null);
+    } else {
+      goHome();
+    }
+  }
+
   const GameComponents = {
-    reaction: ReactionTimeGame, sequence: SequenceMemoryGame,
+    reaction: ReactionTimeGame,
     number: NumberMemoryGame, verbal: VerbalMemoryGame,
     chimp: ChimpTestGame, target: TargetPracticeGame,
   };
@@ -975,7 +1057,7 @@ export default function GamesPage() {
       )}
 
       {phase === "start" && gameMeta && (
-        <div className="w-full max-w-lg">
+        <div className="w-full max-w-5xl mx-auto px-4">
           <button onClick={goHome} className="text-gray-400 text-sm mb-5 hover:text-indigo-600 transition-colors bg-transparent border-none cursor-pointer">
             ← Back to Games
           </button>
@@ -984,7 +1066,7 @@ export default function GamesPage() {
       )}
 
       {phase === "playing" && gameMeta && ActiveComponent && (
-        <div className="w-full max-w-lg">
+        <div className="w-full max-w-5xl mx-auto px-4">
           <button onClick={goHome} className="text-gray-400 text-sm mb-4 hover:text-indigo-600 transition-colors bg-transparent border-none cursor-pointer">
             ← Quit
           </button>
@@ -995,8 +1077,8 @@ export default function GamesPage() {
       )}
 
       {phase === "result" && gameMeta && result && (
-        <div className="w-full max-w-lg">
-          <ResultScreen game={gameMeta} result={result} onPlayAgain={playAgain} onGoBack={goHome} />
+        <div className="w-full max-w-5xl mx-auto px-4">
+          <ResultScreen game={gameMeta} result={result} onPlayAgain={playAgain} onGoBack={goHome} onNext={playNext} />
         </div>
       )}
     </div>
