@@ -47,7 +47,7 @@ export default function Signup() {
 
       if (response.ok) {
         localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify({ name: data.name, userId: data.userId }));
+        localStorage.setItem('user', JSON.stringify({ name: data.name, userId: data.userId, age: data.age }));
         navigate('/');
       } else {
         setError(data.message || 'Registration failed');

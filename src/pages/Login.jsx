@@ -28,7 +28,7 @@ export default function Login() {
 
       if (response.ok) {
         localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify({ name: data.name, userId: data.userId }));
+        localStorage.setItem('user', JSON.stringify({ name: data.name, userId: data.userId, age: data.age }));
         navigate('/');
       } else {
         setError(data.message || 'Login failed');
