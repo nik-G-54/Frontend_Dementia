@@ -7,7 +7,7 @@ import Games from './pages/Games';
 import Chat from './pages/Chat';
 import Reports from './pages/Reports';
 import Tasks from './pages/Tasks';
-import { Layout } from './components/layout/Layout';
+import { DashboardLayout } from './layouts/DashboardLayout';
 
 function App() {
   return (
@@ -18,7 +18,7 @@ function App() {
         <Route path="/signup" element={<Signup />} />
 
         {/* Protected Application Routes */}
-        <Route element={<Layout />}>
+        <Route element={<DashboardLayout />}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/games" element={<Games />} />
           <Route path="/chat" element={<Chat />} />
