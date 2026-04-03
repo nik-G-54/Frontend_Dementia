@@ -8,6 +8,7 @@ import Chat from './pages/Chat';
 import Reports from './pages/Reports';
 import Tasks from './pages/Tasks';
 import { Layout } from './components/layout/Layout';
+import PrivateRoute from './components/PrivateRoute';
 
 function App() {
   return (
@@ -18,12 +19,14 @@ function App() {
         <Route path="/signup" element={<Signup />} />
 
         {/* Protected Application Routes */}
-        <Route element={<Layout />}>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/games" element={<Games />} />
-          <Route path="/chat" element={<Chat />} />
-          <Route path="/reports" element={<Reports />} />
-          <Route path="/tasks" element={<Tasks />} />
+        <Route element={<PrivateRoute />}>
+          <Route element={<Layout />}>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/games" element={<Games />} />
+            <Route path="/chat" element={<Chat />} />
+            <Route path="/reports" element={<Reports />} />
+            <Route path="/tasks" element={<Tasks />} />
+          </Route>
         </Route>
 
         {/* Catch-all Redirect */}
@@ -34,3 +37,4 @@ function App() {
 }
 
 export default App;
+

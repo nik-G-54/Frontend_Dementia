@@ -85,11 +85,11 @@ const GAME_STYLES = `
 `;
 
 /* ─── API helpers ─── */
-const BASE = import.meta.env?.VITE_API_URL || "http://localhost:5000";
+const BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 const getToken = () => localStorage.getItem("token") || "";
-const GAME_TO_TEST_TYPE = {
-  reaction: "path_finder", number: "word_garden",
-  verbal: "color_word", chimp: "word_scramble", target: "memory_mosaic",
+const GAME_TO_SCORE_ID = {
+  reaction: "reaction", sequence: "sequence", number: "number",
+  verbal: "colorWord", chimp: "wordScramble",
 };
 
 async function apiPost(path, body) {
@@ -206,13 +206,13 @@ function ResultScreen({ game, result, onPlayAgain, onGoBack, onNext }) {
     saveDayScore(game.id, result.score, result.errors || 0);
     (async () => {
       try {
-        await apiPost("/api/sessions/game", {
-          testType: GAME_TO_TEST_TYPE[game.id] || "memory_mosaic",
+        await apiPost("/sessions/game", {
+          testType: GAME_TO_SCORE_ID[game.id] || "reaction",
           score: Math.min(1, result.score / 20), timeTaken: result.duration || 10000,
           errors: result.errors || 0, hesitationGaps: [],
         });
-        await apiPost("/api/game-scores", {
-          gameId: GAME_TO_TEST_TYPE[game.id] || game.id,
+        await apiPost("/game-scores", {
+          gameId: GAME_TO_SCORE_ID[game.id] || game.id,
           score: result.score, errors: result.errors || 0, level: result.level || 1,
           ...(result.accuracy !== undefined && { accuracy: result.accuracy }),
           ...(result.reactionTime !== undefined && { reactionTime: result.reactionTime }),
@@ -843,8 +843,8 @@ function GameActivityDialog({ onClose }) {
 
   useEffect(() => {
     Promise.all([
-      apiGet("/api/game-scores/today").catch(() => null),
-      apiGet("/api/game-scores/summary").catch(() => null),
+      apiGet("/game-scores/today").catch(() => null),
+      apiGet("/game-scores/summary").catch(() => null),
     ]).then(([t, s]) => { setTodayData(t); setSummary(s); setLoading(false); });
   }, []);
 
@@ -861,7 +861,7 @@ function GameActivityDialog({ onClose }) {
         ) : (
           <div className="space-y-3">
             {ALL_GAMES.map(game => {
-              const testType = GAME_TO_TEST_TYPE[game.id];
+              const testType = GAME_TO_SCORE_ID[game.id];
               const today = todayData?.[testType];
               const sum = summary?.[testType];
               const localBest = getBestToday(game.id);
@@ -943,7 +943,7 @@ function ReportDashboard({ onShowActivity }) {
   const [summary, setSummary] = useState(null);
 
   useEffect(() => {
-    apiGet("/api/game-scores/summary").catch(() => null)
+    apiGet("/game-scores/summary").catch(() => null)
       .then(s => { setSummary(s); setLoading(false); });
   }, []);
 
@@ -1033,7 +1033,7 @@ export default function GamesPage() {
   }
 
   const GameComponents = {
-    reaction: ReactionTimeGame,
+    reaction: ReactionTimeGame, sequence: SequenceMemoryGame,
     number: NumberMemoryGame, verbal: VerbalMemoryGame,
     chimp: ChimpTestGame, target: TargetPracticeGame,
   };

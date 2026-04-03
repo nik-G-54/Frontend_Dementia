@@ -1,6 +1,8 @@
+import { useState, useEffect } from "react"
 import { Card, CardLabel, CardBigValue, SectionTitle, MiniLabel } from "../components/ui/Card"
 import { Badge } from "../components/ui/Badge"
 import { TaskItem } from "../components/ui/TaskItem"
+import api from "../api/axiosInstance"
 
 function Heatmap() {
   const colors = [
@@ -31,32 +33,63 @@ function Heatmap() {
 }
 
 export default function Dashboard() {
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const userName = user.name || 'User';
+
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.get('/dashboard')
+      .then(res => setData(res.data))
+      .catch(() => setData(null))
+      .finally(() => setLoading(false));
+  }, []);
+
+  // Fallback values when API data isn't available
+  const riskLevel = data?.riskLevel || 'Low';
+  const riskScore = data?.riskScore ?? 0.22;
+  const trend = data?.trend ?? '+0.01';
+  const streak = data?.streak ?? '12 days';
+  const analysis = data?.analysis || "Your cognitive patterns today suggest normal function. Continue your daily routine and test again tomorrow.";
+  const tasks = data?.tasks || [];
+  const doneCount = tasks.filter(t => t.done).length;
+  const totalCount = tasks.length || 5;
+  const gameScores = data?.gameScores || {};
+  const wpmTrend = data?.wpmTrend || [];
+  const riskBadges = data?.riskBadges || [];
+
+  // Risk color mapping
+  const riskColor = riskLevel === 'Low' ? '#1D9E75' : riskLevel === 'Medium' ? '#EF9F27' : '#E53E3E';
+  const riskStage = riskLevel === 'Low' ? 'Stage 0 — Normal' : riskLevel === 'Medium' ? 'Stage 1 — Mild' : 'Stage 2+';
+  const riskVariant = riskLevel === 'Low' ? 'low' : riskLevel === 'Medium' ? 'med' : 'high';
+
   return (
     <div className="w-full">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 mb-3">
         <Card>
           <CardLabel>Risk level</CardLabel>
-          <CardBigValue className="text-[#1D9E75]">Low</CardBigValue>
+          <CardBigValue style={{ color: riskColor }}>{riskLevel}</CardBigValue>
           <div className="mt-1">
-            <Badge variant="low">Stage 0 — Normal</Badge>
+            <Badge variant={riskVariant}>{riskStage}</Badge>
           </div>
         </Card>
         
         <Card>
           <CardLabel>Risk score</CardLabel>
-          <CardBigValue>0.22</CardBigValue>
+          <CardBigValue>{typeof riskScore === 'number' ? riskScore.toFixed(2) : riskScore}</CardBigValue>
           <MiniLabel className="mt-1 block">out of 1.0</MiniLabel>
         </Card>
         
         <Card>
           <CardLabel>Trend (7 days)</CardLabel>
-          <CardBigValue className="text-[#1D9E75]">+0.01</CardBigValue>
+          <CardBigValue className="text-[#1D9E75]">{trend}</CardBigValue>
           <MiniLabel className="mt-1 block">Slight improvement</MiniLabel>
         </Card>
         
         <Card>
           <CardLabel>Task streak</CardLabel>
-          <CardBigValue>12 days</CardBigValue>
+          <CardBigValue>{streak}</CardBigValue>
           <MiniLabel className="mt-1 block">Keep it up!</MiniLabel>
         </Card>
       </div>
@@ -71,7 +104,7 @@ export default function Dashboard() {
               <line x1="0" y1="72" x2="300" y2="72" stroke="rgba(0,0,0,0.1)" strokeWidth="0.5"/>
               <text x="0" y="88" style={{fontSize: "9px", fill: "#888780"}}>30d ago</text>
               <text x="240" y="88" style={{fontSize: "9px", fill: "#888780"}}>Today</text>
-              <text x="246" y="26" style={{fontSize: "9px", fill: "#6d5cf7", fontWeight: 500}}>0.22</text>
+              <text x="246" y="26" style={{fontSize: "9px", fill: "#6d5cf7", fontWeight: 500}}>{typeof riskScore === 'number' ? riskScore.toFixed(2) : riskScore}</text>
             </svg>
           </div>
           
@@ -91,27 +124,23 @@ export default function Dashboard() {
         <Card>
           <SectionTitle>Memory performance — last 7 tests</SectionTitle>
           <div className="mb-3 space-y-1.5">
-            <div className="flex items-center gap-2">
-              <MiniLabel className="w-20 text-right">Memory Mosaic</MiniLabel>
-              <div className="flex-1 h-2 bg-[var(--color-background-secondary)] rounded-full overflow-hidden">
-                <div className="h-full rounded-full bg-[#6d5cf7]" style={{width: "84%"}}></div>
+            {(gameScores.memory !== undefined ? [
+              { label: 'Memory', score: gameScores.memory, color: '#6d5cf7' },
+              { label: 'Language', score: gameScores.language, color: '#1D9E75' },
+              { label: 'Pattern', score: gameScores.pattern, color: '#3B8BD4' },
+            ] : [
+              { label: 'Memory Mosaic', score: 0.84, color: '#6d5cf7' },
+              { label: 'Word Garden', score: 0.72, color: '#1D9E75' },
+              { label: 'Path Finder', score: 0.68, color: '#3B8BD4' },
+            ]).map(item => (
+              <div key={item.label} className="flex items-center gap-2">
+                <MiniLabel className="w-20 text-right">{item.label}</MiniLabel>
+                <div className="flex-1 h-2 bg-[var(--color-background-secondary)] rounded-full overflow-hidden">
+                  <div className="h-full rounded-full" style={{width: `${(item.score * 100)}%`, backgroundColor: item.color}}></div>
+                </div>
+                <MiniLabel>{typeof item.score === 'number' ? item.score.toFixed(2) : item.score}</MiniLabel>
               </div>
-              <MiniLabel>0.84</MiniLabel>
-            </div>
-            <div className="flex items-center gap-2">
-              <MiniLabel className="w-20 text-right">Word Garden</MiniLabel>
-              <div className="flex-1 h-2 bg-[var(--color-background-secondary)] rounded-full overflow-hidden">
-                <div className="h-full rounded-full bg-[#1D9E75]" style={{width: "72%"}}></div>
-              </div>
-              <MiniLabel>0.72</MiniLabel>
-            </div>
-            <div className="flex items-center gap-2">
-              <MiniLabel className="w-20 text-right">Path Finder</MiniLabel>
-              <div className="flex-1 h-2 bg-[var(--color-background-secondary)] rounded-full overflow-hidden">
-                <div className="h-full rounded-full bg-[#3B8BD4]" style={{width: "68%"}}></div>
-              </div>
-              <MiniLabel>0.68</MiniLabel>
-            </div>
+            ))}
           </div>
           
           <SectionTitle>Typing speed trend (WPM)</SectionTitle>
@@ -129,15 +158,21 @@ export default function Dashboard() {
         <Card>
           <div className="flex justify-between items-center mb-1.5">
             <SectionTitle className="mb-0">Today's tasks</SectionTitle>
-            <MiniLabel>3 / 5 done</MiniLabel>
+            <MiniLabel>{doneCount} / {totalCount} done</MiniLabel>
           </div>
           
           <div className="flex flex-col">
-            <TaskItem done dotColor="#6d5cf7" label="Complete today's brain activity" />
-            <TaskItem done dotColor="#1D9E75" label="Check in with your companion" />
-            <TaskItem done dotColor="#3B8BD4" label="5-minute gentle stretching" />
-            <TaskItem done={false} dotColor="#EF9F27" label="Name 5 things you can see right now" />
-            <TaskItem done={false} dotColor="#1D9E75" label="Call a family member today" />
+            {tasks.length > 0 ? tasks.map((t, i) => (
+              <TaskItem key={t._id || i} done={t.done} dotColor={t.dotColor || '#6d5cf7'} label={t.label || t.title} />
+            )) : (
+              <>
+                <TaskItem done dotColor="#6d5cf7" label="Complete today's brain activity" />
+                <TaskItem done dotColor="#1D9E75" label="Check in with your companion" />
+                <TaskItem done dotColor="#3B8BD4" label="5-minute gentle stretching" />
+                <TaskItem done={false} dotColor="#EF9F27" label="Name 5 things you can see right now" />
+                <TaskItem done={false} dotColor="#1D9E75" label="Call a family member today" />
+              </>
+            )}
           </div>
         </Card>
 
@@ -158,13 +193,19 @@ export default function Dashboard() {
       <Card>
         <SectionTitle>Today's analysis</SectionTitle>
         <div className="bg-[var(--color-background-secondary)] border-[0.5px] border-[var(--color-border-secondary)] rounded-lg px-3 py-2.5 text-xs text-[var(--color-text-secondary)] mt-2.5 leading-relaxed">
-          Your cognitive patterns today suggest normal function for your age group (67). Memory recall scored above the 70th percentile for the 66–75 age band. Typing rhythm shows consistent speed with low backspace rate (8%) — a positive signal. Facial expression analysis detected calm engagement. No urgent concerns flagged. Continue your daily routine and test again tomorrow.
+          {analysis}
         </div>
         
         <div className="mt-2.5 flex gap-2 flex-wrap">
-          <Badge variant="low" className="px-2.5 py-1 text-xs">Game: Low risk</Badge>
-          <Badge variant="low" className="px-2.5 py-1 text-xs">Chat: Low risk</Badge>
-          <Badge variant="low" className="px-2.5 py-1 text-xs">Webcam: Low risk</Badge>
+          {riskBadges.length > 0 ? riskBadges.map((b, i) => (
+            <Badge key={i} variant={b.variant || 'low'} className="px-2.5 py-1 text-xs">{b.text}</Badge>
+          )) : (
+            <>
+              <Badge variant="low" className="px-2.5 py-1 text-xs">Game: Low risk</Badge>
+              <Badge variant="low" className="px-2.5 py-1 text-xs">Chat: Low risk</Badge>
+              <Badge variant="low" className="px-2.5 py-1 text-xs">Webcam: Low risk</Badge>
+            </>
+          )}
         </div>
         
         <p className="text-[11px] text-[var(--color-text-tertiary)] mt-2 italic">

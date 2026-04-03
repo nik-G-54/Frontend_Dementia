@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardLabel, SectionTitle, MiniLabel } from '../components/ui/Card';
 import { cn } from '../lib/utils';
+import api from '../api/axiosInstance';
 
 export default function Signup() {
   const [formData, setFormData] = useState({
@@ -32,28 +33,16 @@ export default function Signup() {
     setError('');
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...formData,
-          age: parseInt(formData.age),
-        }),
+      const { data } = await api.post('/auth/register', {
+        ...formData,
+        age: parseInt(formData.age),
       });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify({ name: data.name, userId: data.userId, age: data.age }));
-        navigate('/');
-      } else {
-        setError(data.message || 'Registration failed');
-      }
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify({ name: data.name, userId: data.userId, age: data.age }));
+      navigate('/');
     } catch (err) {
-      setError('Could not connect to the backend server.');
+      const msg = err.response?.data?.message || 'Could not connect to the backend server.';
+      setError(msg);
     } finally {
       setLoading(false);
     }

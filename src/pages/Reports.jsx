@@ -1,25 +1,63 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardLabel, SectionTitle, MiniLabel } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import api from '../api/axiosInstance';
 
 export default function Reports() {
-  const riskData = [
-    { day: 'Day 1', score: 0.35 },
-    { day: 'Day 5', score: 0.32 },
-    { day: 'Day 10', score: 0.33 },
-    { day: 'Day 15', score: 0.28 },
-    { day: 'Day 20', score: 0.25 },
-    { day: 'Day 25', score: 0.24 },
-    { day: 'Day 30', score: 0.22 },
-  ];
+  const [riskData, setRiskData] = useState([]);
+  const [gamePerformance, setGamePerformance] = useState([]);
+  const [todayReport, setTodayReport] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const gamePerformance = [
-    { name: 'Memory', score: 84 },
-    { name: 'Language', score: 72 },
-    { name: 'Pattern', score: 68 },
-    { name: 'Speed', score: 90 },
-  ];
+  useEffect(() => {
+    Promise.all([
+      api.get('/dashboard/reports/history').catch(() => ({ data: null })),
+      api.get('/dashboard/reports/today').catch(() => ({ data: null })),
+    ]).then(([historyRes, todayRes]) => {
+      const history = historyRes.data;
+      const today = todayRes.data;
+
+      if (history?.riskTrend?.length) {
+        setRiskData(history.riskTrend);
+      } else {
+        setRiskData([
+          { day: 'Day 1', score: 0.35 },
+          { day: 'Day 5', score: 0.32 },
+          { day: 'Day 10', score: 0.33 },
+          { day: 'Day 15', score: 0.28 },
+          { day: 'Day 20', score: 0.25 },
+          { day: 'Day 25', score: 0.24 },
+          { day: 'Day 30', score: 0.22 },
+        ]);
+      }
+
+      if (history?.gamePerformance?.length) {
+        setGamePerformance(history.gamePerformance);
+      } else {
+        setGamePerformance([
+          { name: 'Memory', score: 84 },
+          { name: 'Language', score: 72 },
+          { name: 'Pattern', score: 68 },
+          { name: 'Speed', score: 90 },
+        ]);
+      }
+
+      if (today) {
+        setTodayReport(today);
+      }
+    }).finally(() => setLoading(false));
+  }, []);
+
+  const stageText = todayReport?.stage || 'Stage 0';
+  const stageVariant = todayReport?.stageVariant || 'low';
+  const stageBadge = todayReport?.stageBadge || 'Normal Baseline';
+  const avgWpm = todayReport?.avgWpm || '42 WPM';
+  const wpmVariant = todayReport?.wpmVariant || 'info';
+  const wpmBadge = todayReport?.wpmBadge || 'Stable Cadence';
+  const engagement = todayReport?.engagement || '92%';
+  const engagementVariant = todayReport?.engagementVariant || 'med';
+  const engagementBadge = todayReport?.engagementBadge || 'High Adherence';
 
   return (
     <div className="w-full pb-10">
@@ -91,22 +129,22 @@ export default function Reports() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="bg-[var(--color-background-success)]/10 border-[var(--color-border-success)]">
           <CardLabel style={{ color: 'var(--color-text-success)' }}>Stage Progression</CardLabel>
-          <div className="text-2xl font-bold mt-2">Stage 0</div>
-          <Badge variant="low" className="mt-2">Normal Baseline</Badge>
+          <div className="text-2xl font-bold mt-2">{stageText}</div>
+          <Badge variant={stageVariant} className="mt-2">{stageBadge}</Badge>
           <p className="text-[10px] text-[var(--color-text-tertiary)] mt-3">Next assessment recommendation: 24h</p>
         </Card>
 
         <Card className="bg-[var(--color-background-info)]/10 border-[var(--color-border-info)]">
           <CardLabel style={{ color: 'var(--color-text-info)' }}>Avg Telemetry Score</CardLabel>
-          <div className="text-2xl font-bold mt-2">42 WPM</div>
-          <Badge variant="info" className="mt-2">Stable Cadence</Badge>
+          <div className="text-2xl font-bold mt-2">{avgWpm}</div>
+          <Badge variant={wpmVariant} className="mt-2">{wpmBadge}</Badge>
           <p className="text-[10px] text-[var(--color-text-tertiary)] mt-3">Measured over last 10 chat sessions.</p>
         </Card>
 
         <Card className="bg-[var(--color-background-warning)]/10 border-[var(--color-border-warning)]">
           <CardLabel style={{ color: 'var(--color-text-warning)' }}>Engagement Rate</CardLabel>
-          <div className="text-2xl font-bold mt-2">92%</div>
-          <Badge variant="med" className="mt-2">High Adherence</Badge>
+          <div className="text-2xl font-bold mt-2">{engagement}</div>
+          <Badge variant={engagementVariant} className="mt-2">{engagementBadge}</Badge>
           <p className="text-[10px] text-[var(--color-text-tertiary)] mt-3">Daily routine completion consistency.</p>
         </Card>
       </div>
