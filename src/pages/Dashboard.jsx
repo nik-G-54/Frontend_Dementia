@@ -4,6 +4,7 @@ import { Badge } from "../components/ui/Badge"
 import { TaskItem } from "../components/ui/TaskItem"
 import api from "../api/axiosInstance"
 
+/* ─── Heatmap ─── */
 function Heatmap() {
   const colors = [
     "var(--color-background-secondary)",
@@ -12,26 +13,182 @@ function Heatmap() {
     "#1D9E75",
     "#0F6E56"
   ];
-  
-  // Generate random data for demo
   const days = Array.from({ length: 365 }, () => {
     const v = Math.random();
     return v < 0.3 ? 0 : v < 0.55 ? 1 : v < 0.75 ? 2 : v < 0.9 ? 3 : 4;
   });
-
   return (
     <div className="flex gap-[3px] flex-wrap mt-1">
       {days.map((val, i) => (
-        <div 
-          key={i} 
-          className="w-3 h-3 rounded-[2px]" 
-          style={{ backgroundColor: colors[val] }}
-        />
+        <div key={i} className="w-3 h-3 rounded-[2px]" style={{ backgroundColor: colors[val] }} />
       ))}
     </div>
   )
 }
 
+/* ─── ScoreCard ─── */
+function ScoreCard({ title, score, total, subtitle, icon, colorClass, trendText }) {
+  return (
+    <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+      <div className="flex items-center justify-between mb-3">
+        <span className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg ${colorClass?.bg || 'bg-gray-100'}`}>
+          {icon}
+        </span>
+        {trendText && (
+          <span className="text-[10px] font-semibold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
+            {trendText}
+          </span>
+        )}
+      </div>
+      <div className="text-xs text-gray-500 font-medium mb-1">{title}</div>
+      <div className="flex items-baseline gap-1">
+        <span className="text-2xl font-extrabold text-gray-900">{score}</span>
+        {total && <span className="text-xs text-gray-400">/ {total}</span>}
+      </div>
+      {subtitle && <div className="text-[10px] text-gray-400 mt-1">{subtitle}</div>}
+    </div>
+  )
+}
+
+/* ─── DailyProgressCalendar ─── */
+function DailyProgressCalendar() {
+  const today = new Date();
+  const dayNames = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).getDay();
+  const completedDays = new Set([1, 2, 3, 5, 6, 7, 8, 10, 11, 12, today.getDate()]);
+
+  return (
+    <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+      <h3 className="text-sm font-bold text-gray-900 mb-3">
+        {today.toLocaleString('default', { month: 'long', year: 'numeric' })}
+      </h3>
+      <div className="grid grid-cols-7 gap-1 text-center">
+        {dayNames.map((d, i) => (
+          <div key={i} className="text-[10px] text-gray-400 font-medium py-1">{d}</div>
+        ))}
+        {Array.from({ length: firstDay }).map((_, i) => (
+          <div key={`e-${i}`} />
+        ))}
+        {Array.from({ length: daysInMonth }).map((_, i) => {
+          const day = i + 1;
+          const isToday = day === today.getDate();
+          const done = completedDays.has(day);
+          return (
+            <div
+              key={day}
+              className={`w-7 h-7 rounded-full text-[11px] font-medium flex items-center justify-center mx-auto
+                ${isToday ? 'bg-indigo-600 text-white' : done ? 'bg-green-100 text-green-700' : 'text-gray-500 hover:bg-gray-50'}`}
+            >
+              {day}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+/* ─── TasksListWidget ─── */
+function TasksListWidget() {
+  const widgetTasks = [
+    { label: "Complete today's brain games", done: true, color: '#6d5cf7' },
+    { label: "Chat with your AI companion", done: true, color: '#1D9E75' },
+    { label: "5-minute gentle stretching", done: true, color: '#3B8BD4' },
+    { label: "Name 5 things you can see", done: false, color: '#EF9F27' },
+    { label: "Call a family member", done: false, color: '#1D9E75' },
+  ];
+  const doneCount = widgetTasks.filter(t => t.done).length;
+  return (
+    <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 h-full flex flex-col">
+      <div className="flex justify-between items-center mb-3">
+        <h3 className="text-sm font-bold text-gray-900">Today's Tasks</h3>
+        <span className="text-[10px] font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
+          {doneCount}/{widgetTasks.length}
+        </span>
+      </div>
+      <div className="w-full h-1.5 bg-gray-100 rounded-full mb-3 overflow-hidden">
+        <div className="h-full bg-indigo-500 rounded-full transition-all" style={{ width: `${(doneCount / widgetTasks.length) * 100}%` }} />
+      </div>
+      <div className="flex-1 space-y-1 overflow-y-auto">
+        {widgetTasks.map((t, i) => (
+          <div key={i} className={`flex items-center gap-2.5 px-3 py-2 rounded-lg ${t.done ? 'opacity-60' : ''}`}>
+            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${t.done ? 'border-green-500 bg-green-500' : 'border-gray-300'}`}>
+              {t.done && <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+            </div>
+            <span className={`text-xs ${t.done ? 'line-through text-gray-400' : 'text-gray-700 font-medium'}`}>{t.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/* ─── ProgressChart (pure SVG) ─── */
+function ProgressChart({ title, data, dataKey, gradientColor }) {
+  const values = data.map(d => d[dataKey]);
+  const max = Math.max(...values, 1);
+  const min = Math.min(...values, 0);
+  const range = max - min || 1;
+  const w = 500, h = 160, pad = 30;
+  const stepX = (w - pad * 2) / (data.length - 1);
+
+  const points = values.map((v, i) => {
+    const x = pad + i * stepX;
+    const y = h - pad - ((v - min) / range) * (h - pad * 2);
+    return `${x},${y}`;
+  }).join(' ');
+
+  const areaPoints = `${pad},${h - pad} ${points} ${pad + (data.length - 1) * stepX},${h - pad}`;
+
+  return (
+    <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+      <h3 className="text-sm font-bold text-gray-900 mb-3">{title}</h3>
+      <svg viewBox={`0 0 ${w} ${h}`} className="w-full" preserveAspectRatio="none" style={{ height: 160 }}>
+        <defs>
+          <linearGradient id={`grad-${dataKey}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={gradientColor} stopOpacity="0.3" />
+            <stop offset="100%" stopColor={gradientColor} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        {/* grid lines */}
+        {[0, 0.25, 0.5, 0.75, 1].map((pct, i) => {
+          const y = pad + pct * (h - pad * 2);
+          return <line key={i} x1={pad} y1={y} x2={w - pad} y2={y} stroke="rgba(0,0,0,0.06)" strokeWidth="1" />;
+        })}
+        {/* area */}
+        <polygon points={areaPoints} fill={`url(#grad-${dataKey})`} />
+        {/* line */}
+        <polyline points={points} fill="none" stroke={gradientColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        {/* dots */}
+        {values.map((v, i) => {
+          const x = pad + i * stepX;
+          const y = h - pad - ((v - min) / range) * (h - pad * 2);
+          return <circle key={i} cx={x} cy={y} r="4" fill={gradientColor} stroke="white" strokeWidth="2" />;
+        })}
+        {/* x labels */}
+        {data.map((d, i) => (
+          <text key={i} x={pad + i * stepX} y={h - 8} textAnchor="middle" fontSize="10" fill="#9ca3af">{d.name}</text>
+        ))}
+      </svg>
+    </div>
+  )
+}
+
+/* ─── Chart Data ─── */
+const chartData = [
+  { name: 'Mon', risk: 0.25, memory: 65 },
+  { name: 'Tue', risk: 0.22, memory: 70 },
+  { name: 'Wed', risk: 0.23, memory: 68 },
+  { name: 'Thu', risk: 0.20, memory: 75 },
+  { name: 'Fri', risk: 0.18, memory: 80 },
+  { name: 'Sat', risk: 0.15, memory: 85 },
+  { name: 'Sun', risk: 0.16, memory: 82 }
+];
+
+/* ═══════════════════════════════════════════
+   MAIN DASHBOARD
+═══════════════════════════════════════════ */
 export default function Dashboard() {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const userName = user.name || 'User';
@@ -207,11 +364,123 @@ export default function Dashboard() {
             </>
           )}
         </div>
-        
-        <p className="text-[11px] text-[var(--color-text-tertiary)] mt-2 italic">
-          This tool provides risk indicators only. It is not a medical diagnosis. Please consult a healthcare professional.
-        </p>
       </Card>
+
+      {/* KPI Stats Row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+        <ScoreCard 
+          title="Overall Risk Score" 
+          score="0.16" 
+          total="1.0"
+          subtitle="Stage 0 — Normal Cognitive Function" 
+          icon="🛡️" 
+          colorClass={{ bg: 'bg-green-100 text-green-600' }}
+          trendText="-0.04 this week"
+        />
+        <ScoreCard 
+          title="Average Game Score" 
+          score="84" 
+          total="100"
+          subtitle="Top 15% for your age group" 
+          icon="🎮" 
+          colorClass={{ bg: 'bg-indigo-100 text-indigo-600' }}
+          trendText="+5% from last week"
+        />
+        <ScoreCard 
+          title="Chat Health Index" 
+          score="92" 
+          total="100"
+          subtitle="High linguistic coherence & recall" 
+          icon="💬" 
+          colorClass={{ bg: 'bg-blue-100 text-blue-600' }}
+        />
+        <ScoreCard 
+          title="Webcam Emotion Score" 
+          score="Calm" 
+          subtitle="Consistent positive baseline detected" 
+          icon="📷" 
+          colorClass={{ bg: 'bg-amber-100 text-amber-600' }}
+        />
+      </div>
+
+      {/* Middle Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4">
+        
+        {/* Left Column: Calendar & Tasks */}
+        <div className="lg:col-span-1 space-y-6">
+          <DailyProgressCalendar />
+          
+          <div className="h-[400px]">
+            <TasksListWidget />
+          </div>
+        </div>
+
+        {/* Right Column: Charts & Analysis */}
+        <div className="lg:col-span-2 space-y-6 flex flex-col">
+          
+          <ProgressChart 
+            title="Memory Performance Trend" 
+            data={chartData} 
+            dataKey="memory" 
+            gradientColor="#3B82F6" 
+          />
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1">
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Detailed Analysis</h3>
+              <div className="space-y-4">
+                <div className="p-4 rounded-xl bg-gray-50 border border-gray-100">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-lg">⌨️</span>
+                    <h4 className="font-semibold text-gray-800 text-sm">Typing Rhythm</h4>
+                  </div>
+                  <p className="text-xs text-gray-500 leading-relaxed">
+                    Consistent speed with low backspace rate (8%). Fine motor skills remain stable.
+                  </p>
+                </div>
+                
+                <div className="p-4 rounded-xl bg-gray-50 border border-gray-100">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-lg">🧠</span>
+                    <h4 className="font-semibold text-gray-800 text-sm">Short-term Memory</h4>
+                  </div>
+                  <p className="text-xs text-gray-500 leading-relaxed">
+                    Scored above the 70th percentile for the 66-75 age band in today's Sequence Game.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-2xl p-6 shadow-sm border border-indigo-100 relative overflow-hidden">
+              {/* Illustration graphic abstraction */}
+              <div className="absolute right-0 bottom-0 opacity-20 transform translate-x-1/4 translate-y-1/4">
+                <svg width="150" height="150" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M50 0C77.6142 0 100 22.3858 100 50C100 77.6142 77.6142 100 50 100C22.3858 100 0 77.6142 0 50C0 22.3858 22.3858 0 50 0Z" fill="#818CF8"/>
+                  <circle cx="30" cy="30" r="10" fill="white"/>
+                  <circle cx="70" cy="70" r="15" fill="white"/>
+                  <circle cx="20" cy="80" r="5" fill="white"/>
+                </svg>
+              </div>
+
+              <h3 className="text-lg font-bold text-indigo-900 mb-2 relative z-10">Doctor's Note</h3>
+              <p className="text-sm text-indigo-800/80 relative z-10 leading-relaxed mt-4">
+                "Your test consistency this month is excellent. We are seeing sustained baseline stability in your reaction times. Keep up the daily check-ins — the AI chatbot is picking up very positive grammatical structures."
+              </p>
+              
+              <div className="mt-6 flex items-center gap-3 relative z-10">
+                <div className="w-10 h-10 rounded-full bg-indigo-200 border-2 border-white shadow-sm flex items-center justify-center font-bold text-indigo-700">
+                  Dr
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-indigo-900">Dr. Sarah Jenkins</div>
+                  <div className="text-[10px] text-indigo-600">Neurologist</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
     </div>
-  )
+  );
 }
