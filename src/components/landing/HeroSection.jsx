@@ -36,7 +36,7 @@ export default function HeroSection({ onStartAssessment, onLearnMore }) {
             className="text-lg md:text-xl mb-10 leading-relaxed max-w-lg"
             style={{ color: 'var(--ls-on-surface-variant)' }}
           >
-            Lucid Sanctuary utilizes clinically-validated AI to transform behavioral markers into
+          Manasveda utilizes clinically-validated AI to transform behavioral markers into
             actionable neurological insights. Experience the future of proactive brain health
             management.
           </p>

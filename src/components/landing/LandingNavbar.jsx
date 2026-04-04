@@ -20,9 +20,9 @@ export default function LandingNavbar({ onLogin, onGetStarted }) {
   const handleGetStarted = () => (onGetStarted ? onGetStarted() : navigate('/signup'));
 
   const navLinks = [
-    { label: 'Platform', href: '#platform' },
-    { label: 'Science', href: '#science' },
-    { label: 'Pricing', href: '#pricing' },
+    // { label: 'Platform', href: '#platform' },
+    // { label: 'Science', href: '#science' },
+    // { label: 'Pricing', href: '#pricing' },
   ];
 
   return (
@@ -40,7 +40,7 @@ export default function LandingNavbar({ onLogin, onGetStarted }) {
           psychology
         </span>
         <span className="text-2xl font-bold tracking-tight" style={{ color: '#1e40af' }}>
-          Lucid Sanctuary
+         Manasveda
         </span>
       </div>
 

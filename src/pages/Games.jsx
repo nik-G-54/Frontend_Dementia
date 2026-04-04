@@ -1122,7 +1122,7 @@ export default function GamesPage() {
             </div>
 
             {/* Game 2: Target Practice */}
-            {/* <div className="bg-white/60 backdrop-blur-xl border border-[#c1c6d7]/20 p-8 rounded-lg flex flex-col group hover:shadow-xl transition-all duration-500 cursor-pointer" onClick={() => selectGame('target')}>
+            <div className="bg-white/60 backdrop-blur-xl border border-[#c1c6d7]/20 p-8 rounded-lg flex flex-col group hover:shadow-xl transition-all duration-500 cursor-pointer" onClick={() => selectGame('target')}>
               <div className="w-14 h-14 rounded-2xl bg-[#dc2626]/10 flex items-center justify-center text-[#dc2626] mb-6 group-hover:scale-110 transition-transform">
                 <span className="material-symbols-outlined text-3xl">track_changes</span>
               </div>
@@ -1139,7 +1139,7 @@ export default function GamesPage() {
                 Start Game
                 <span className="material-symbols-outlined text-sm">arrow_forward</span>
               </button>
-            </div> */}
+            </div>
 
             {/* Game 3: Number Memory */}
             <div className="bg-white/60 backdrop-blur-xl border border-[#c1c6d7]/20 p-8 rounded-lg flex flex-col group hover:shadow-xl transition-all duration-500 cursor-pointer" onClick={() => selectGame('number')}>
@@ -1182,7 +1182,7 @@ export default function GamesPage() {
             </div>
 
             {/* Game 5: Reaction Time */}
-            <div className="bg-white/60 backdrop-blur-xl border border-[#c1c6d7]/20 p-8 rounded-lg flex flex-col group hover:shadow-xl transition-all duration-500 cursor-pointer" onClick={() => selectGame('reaction')}>
+            {/* <div className="bg-white/60 backdrop-blur-xl border border-[#c1c6d7]/20 p-8 rounded-lg flex flex-col group hover:shadow-xl transition-all duration-500 cursor-pointer" onClick={() => selectGame('reaction')}>
               <div className="w-14 h-14 rounded-2xl bg-[#645efb]/10 flex items-center justify-center text-[#645efb] mb-6 group-hover:scale-110 transition-transform">
                 <span className="material-symbols-outlined text-3xl">bolt</span>
               </div>
@@ -1199,7 +1199,7 @@ export default function GamesPage() {
                 Start Game
                 <span className="material-symbols-outlined text-sm">arrow_forward</span>
               </button>
-            </div>
+            </div> */}
 
             {/* Custom Bento Card: AI Insights */}
             <div className="bg-[#e2dfff] border border-[#c1c6d7]/20 p-8 rounded-lg flex flex-col justify-between overflow-hidden relative shadow-sm">
@@ -1224,7 +1224,7 @@ export default function GamesPage() {
           {/* Footer */}
           <div className="mt-16 pt-8 border-t border-gray-200">
             <div className="flex flex-col md:flex-row justify-between items-center text-sm text-gray-400">
-              <p>© 2024 Lucid Sanctuary • Medical Grade Cognitive Diagnostics</p>
+              <p>© 2024 Manasveda • Medical Grade Cognitive Diagnostics</p>
               <div className="flex space-x-6 mt-4 md:mt-0">
                 <a className="hover:text-[#0058bf] transition-colors" href="#">Privacy Protocol</a>
                 <a className="hover:text-[#0058bf] transition-colors" href="#">Clinical Standards</a>

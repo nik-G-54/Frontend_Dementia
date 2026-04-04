@@ -42,7 +42,7 @@ export default function LandingFooter() {
               psychology
             </span>
             <span className="text-2xl font-bold tracking-tight" style={{ color: '#1e40af' }}>
-              Lucid Sanctuary
+            Manasveda
             </span>
           </div>
           <p className="max-w-xs mb-8" style={{ color: 'var(--ls-on-surface-variant)' }}>
@@ -91,7 +91,7 @@ export default function LandingFooter() {
           letterSpacing: '0.2em',
         }}
       >
-        <span>© 2024 Lucid Sanctuary. All Rights Reserved.</span>
+        <span>© 2024 Manasveda. All Rights Reserved.</span>
         <div className="flex gap-8">
           <a href="#" className="ls-link">Terms of Service</a>
           <a href="#" className="ls-link">Cookie Policy</a>
