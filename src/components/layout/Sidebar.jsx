@@ -17,7 +17,6 @@ export function Sidebar() {
     { name: 'Games',     path: '/games',     icon: 'extension' },
     { name: 'Reports',   path: '/reports',   icon: 'assessment' },
     { name: 'Chat',      path: '/chat',      icon: 'forum' },
-    { name: 'Profile',   path: '/profile',   icon: 'person' },
   ];
 
   return (
@@ -45,9 +44,6 @@ export function Sidebar() {
         })}
       </nav>
       <div className="mt-auto flex flex-col gap-6">
-        <button className="text-slate-400 dark:text-slate-500 hover:text-blue-600">
-          <span className="material-symbols-outlined">settings</span>
-        </button>
         <button onClick={handleLogout} className="text-slate-400 dark:text-slate-500 hover:text-blue-600">
           <span className="material-symbols-outlined">logout</span>
         </button>
