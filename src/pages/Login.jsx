@@ -21,6 +21,7 @@ export default function Login() {
       const { data } = await api.post('/auth/login', { phone, pin });
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify({ name: data.name, userId: data.userId, age: data.age }));
+      localStorage.setItem('mode', 'real');
       navigate('/dashboard');
     } catch (err) {
       const msg = err.response?.data?.message || 'Could not connect to the backend server.';
@@ -153,7 +154,6 @@ export default function Login() {
                 </div> */}
               </div>
 
-              {/* Action Button */}
               <button 
                 type="submit"
                 disabled={loading}
@@ -161,6 +161,17 @@ export default function Login() {
               >
                 {loading ? "Signing in..." : "Sign In"}
                 {!loading && <ArrowRight size={24} />}
+              </button>
+
+              <button 
+                type="button"
+                onClick={() => {
+                  localStorage.setItem('mode', 'demo');
+                  navigate('/dashboard');
+                }}
+                className="w-full bg-white text-[#001e40] border-2 border-[#001e40] font-headline font-bold text-lg py-3.5 rounded-2xl shadow-sm hover:bg-gray-50 active:scale-[0.98] transition-all flex items-center justify-center gap-3 mt-4"
+              >
+                Try Demo <ArrowRight size={20} />
               </button>
             </form>
 

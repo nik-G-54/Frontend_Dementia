@@ -1,486 +1,362 @@
-import { useState, useEffect } from "react"
-import { Card, CardLabel, CardBigValue, SectionTitle, MiniLabel } from "../components/ui/Card"
-import { Badge } from "../components/ui/Badge"
-import { TaskItem } from "../components/ui/TaskItem"
-import api from "../api/axiosInstance"
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import api from '../api/axiosInstance';
 
-/* ─── Heatmap ─── */
-function Heatmap() {
-  const colors = [
-    "var(--color-background-secondary)",
-    "#E1F5EE",
-    "#9FE1CB",
-    "#1D9E75",
-    "#0F6E56"
-  ];
-  const days = Array.from({ length: 365 }, () => {
-    const v = Math.random();
-    return v < 0.3 ? 0 : v < 0.55 ? 1 : v < 0.75 ? 2 : v < 0.9 ? 3 : 4;
-  });
-  return (
-    <div className="flex gap-[3px] flex-wrap mt-1">
-      {days.map((val, i) => (
-        <div key={i} className="w-3 h-3 rounded-[2px]" style={{ backgroundColor: colors[val] }} />
-      ))}
-    </div>
-  )
-}
+const demoData = {
+  today: {
+    todayScore: 72,
+    overallScore: 68,
+    progress: 72
+  },
+  weekly: [
+    { day: "Mon", score: 60 },
+    { day: "Tue", score: 65 },
+    { day: "Wed", score: 70 },
+    { day: "Thu", score: 68 },
+    { day: "Fri", score: 75 },
+    { day: "Sat", score: 80 },
+    { day: "Sun", score: 72 }
+  ],
+  distribution: {
+    focus: 42,
+    memory: 38,
+    logic: 20
+  },
+  risk: {
+    level: "Low",
+    value: 25
+  },
+  aiSummary: "Your cognitive performance is stable with strong focus levels. Slight fatigue observed in memory tasks."
+};
 
-/* ─── ScoreCard ─── */
-function ScoreCard({ title, score, total, subtitle, icon, colorClass, trendText }) {
-  return (
-    <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-      <div className="flex items-center justify-between mb-3">
-        <span className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg ${colorClass?.bg || 'bg-gray-100'}`}>
-          {icon}
-        </span>
-        {trendText && (
-          <span className="text-[10px] font-semibold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
-            {trendText}
-          </span>
-        )}
-      </div>
-      <div className="text-xs text-gray-500 font-medium mb-1">{title}</div>
-      <div className="flex items-baseline gap-1">
-        <span className="text-2xl font-extrabold text-gray-900">{score}</span>
-        {total && <span className="text-xs text-gray-400">/ {total}</span>}
-      </div>
-      {subtitle && <div className="text-[10px] text-gray-400 mt-1">{subtitle}</div>}
-    </div>
-  )
-}
-
-/* ─── DailyProgressCalendar ─── */
-function DailyProgressCalendar() {
-  const today = new Date();
-  const dayNames = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-  const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).getDay();
-  const completedDays = new Set([1, 2, 3, 5, 6, 7, 8, 10, 11, 12, today.getDate()]);
-
-  return (
-    <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-      <h3 className="text-sm font-bold text-gray-900 mb-3">
-        {today.toLocaleString('default', { month: 'long', year: 'numeric' })}
-      </h3>
-      <div className="grid grid-cols-7 gap-1 text-center">
-        {dayNames.map((d, i) => (
-          <div key={i} className="text-[10px] text-gray-400 font-medium py-1">{d}</div>
-        ))}
-        {Array.from({ length: firstDay }).map((_, i) => (
-          <div key={`e-${i}`} />
-        ))}
-        {Array.from({ length: daysInMonth }).map((_, i) => {
-          const day = i + 1;
-          const isToday = day === today.getDate();
-          const done = completedDays.has(day);
-          return (
-            <div
-              key={day}
-              className={`w-7 h-7 rounded-full text-[11px] font-medium flex items-center justify-center mx-auto
-                ${isToday ? 'bg-indigo-600 text-white' : done ? 'bg-green-100 text-green-700' : 'text-gray-500 hover:bg-gray-50'}`}
-            >
-              {day}
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
-/* ─── TasksListWidget ─── */
-function TasksListWidget() {
-  const widgetTasks = [
-    { label: "Complete today's brain games", done: true, color: '#6d5cf7' },
-    { label: "Chat with your AI companion", done: true, color: '#1D9E75' },
-    { label: "5-minute gentle stretching", done: true, color: '#3B8BD4' },
-    { label: "Name 5 things you can see", done: false, color: '#EF9F27' },
-    { label: "Call a family member", done: false, color: '#1D9E75' },
-  ];
-  const doneCount = widgetTasks.filter(t => t.done).length;
-  return (
-    <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 h-full flex flex-col">
-      <div className="flex justify-between items-center mb-3">
-        <h3 className="text-sm font-bold text-gray-900">Today's Tasks</h3>
-        <span className="text-[10px] font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
-          {doneCount}/{widgetTasks.length}
-        </span>
-      </div>
-      <div className="w-full h-1.5 bg-gray-100 rounded-full mb-3 overflow-hidden">
-        <div className="h-full bg-indigo-500 rounded-full transition-all" style={{ width: `${(doneCount / widgetTasks.length) * 100}%` }} />
-      </div>
-      <div className="flex-1 space-y-1 overflow-y-auto">
-        {widgetTasks.map((t, i) => (
-          <div key={i} className={`flex items-center gap-2.5 px-3 py-2 rounded-lg ${t.done ? 'opacity-60' : ''}`}>
-            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${t.done ? 'border-green-500 bg-green-500' : 'border-gray-300'}`}>
-              {t.done && <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
-            </div>
-            <span className={`text-xs ${t.done ? 'line-through text-gray-400' : 'text-gray-700 font-medium'}`}>{t.label}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-/* ─── ProgressChart (pure SVG) ─── */
-function ProgressChart({ title, data, dataKey, gradientColor }) {
-  const values = data.map(d => d[dataKey]);
-  const max = Math.max(...values, 1);
-  const min = Math.min(...values, 0);
-  const range = max - min || 1;
-  const w = 500, h = 160, pad = 30;
-  const stepX = (w - pad * 2) / (data.length - 1);
-
-  const points = values.map((v, i) => {
-    const x = pad + i * stepX;
-    const y = h - pad - ((v - min) / range) * (h - pad * 2);
-    return `${x},${y}`;
-  }).join(' ');
-
-  const areaPoints = `${pad},${h - pad} ${points} ${pad + (data.length - 1) * stepX},${h - pad}`;
-
-  return (
-    <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-      <h3 className="text-sm font-bold text-gray-900 mb-3">{title}</h3>
-      <svg viewBox={`0 0 ${w} ${h}`} className="w-full" preserveAspectRatio="none" style={{ height: 160 }}>
-        <defs>
-          <linearGradient id={`grad-${dataKey}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={gradientColor} stopOpacity="0.3" />
-            <stop offset="100%" stopColor={gradientColor} stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        {/* grid lines */}
-        {[0, 0.25, 0.5, 0.75, 1].map((pct, i) => {
-          const y = pad + pct * (h - pad * 2);
-          return <line key={i} x1={pad} y1={y} x2={w - pad} y2={y} stroke="rgba(0,0,0,0.06)" strokeWidth="1" />;
-        })}
-        {/* area */}
-        <polygon points={areaPoints} fill={`url(#grad-${dataKey})`} />
-        {/* line */}
-        <polyline points={points} fill="none" stroke={gradientColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-        {/* dots */}
-        {values.map((v, i) => {
-          const x = pad + i * stepX;
-          const y = h - pad - ((v - min) / range) * (h - pad * 2);
-          return <circle key={i} cx={x} cy={y} r="4" fill={gradientColor} stroke="white" strokeWidth="2" />;
-        })}
-        {/* x labels */}
-        {data.map((d, i) => (
-          <text key={i} x={pad + i * stepX} y={h - 8} textAnchor="middle" fontSize="10" fill="#9ca3af">{d.name}</text>
-        ))}
-      </svg>
-    </div>
-  )
-}
-
-/* ─── Chart Data ─── */
-const chartData = [
-  { name: 'Mon', risk: 0.25, memory: 65 },
-  { name: 'Tue', risk: 0.22, memory: 70 },
-  { name: 'Wed', risk: 0.23, memory: 68 },
-  { name: 'Thu', risk: 0.20, memory: 75 },
-  { name: 'Fri', risk: 0.18, memory: 80 },
-  { name: 'Sat', risk: 0.15, memory: 85 },
-  { name: 'Sun', risk: 0.16, memory: 82 }
-];
-
-/* ═══════════════════════════════════════════
-   MAIN DASHBOARD
-═══════════════════════════════════════════ */
 export default function Dashboard() {
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const userName = user.name || 'User';
-
-  const [data, setData] = useState(null);
+  const navigate = useNavigate();
+  const [mode, setMode] = useState('real');
   const [loading, setLoading] = useState(true);
+  const [data, setData] = useState(null);
+  const [userName, setUserName] = useState('User');
 
   useEffect(() => {
-    api.get('/dashboard')
-      .then(res => setData(res.data))
-      .catch(() => setData(null))
-      .finally(() => setLoading(false));
+    const currentMode = localStorage.getItem('mode') || 'real';
+    setMode(currentMode);
+
+    if (currentMode === 'demo') {
+      setData(demoData);
+      setUserName('Demo User');
+      setLoading(false);
+    } else {
+      // Real mode
+      try {
+        const userStr = localStorage.getItem('user');
+        if (userStr) setUserName(JSON.parse(userStr).name || 'User');
+      } catch (e) {}
+
+      api.get('/dashboard')
+        .then(res => {
+          if (res.data && Object.keys(res.data).length > 0) {
+            setData({
+              today: {
+                todayScore: res.data.todayScore || 0,
+                overallScore: res.data.overallScore || 0,
+                progress: res.data.progress || 0
+              },
+              weekly: res.data.weekly || [],
+              distribution: res.data.distribution || { focus: 0, memory: 0, logic: 0 },
+              risk: res.data.risk || { level: "Low", value: 0 },
+              aiSummary: res.data.aiSummary || "We need more data to generate insights."
+            });
+          } else {
+            setData(null); // Empty state
+          }
+        })
+        .catch(() => setData(null))
+        .finally(() => setLoading(false));
+    }
   }, []);
 
-  // Fallback values when API data isn't available
-  const riskLevel = data?.riskLevel || 'Low';
-  const riskScore = data?.riskScore ?? 0.22;
-  const trend = data?.trend ?? '+0.01';
-  const streak = data?.streak ?? '12 days';
-  const analysis = data?.analysis || "Your cognitive patterns today suggest normal function. Continue your daily routine and test again tomorrow.";
-  const tasks = data?.tasks || [];
-  const doneCount = tasks.filter(t => t.done).length;
-  const totalCount = tasks.length || 5;
-  const gameScores = data?.gameScores || {};
-  const wpmTrend = data?.wpmTrend || [];
-  const riskBadges = data?.riskBadges || [];
+  if (loading) {
+    return <div className="flex-1 flex items-center justify-center min-h-screen">Loading...</div>;
+  }
 
-  // Risk color mapping
-  const riskColor = riskLevel === 'Low' ? '#1D9E75' : riskLevel === 'Medium' ? '#EF9F27' : '#E53E3E';
-  const riskStage = riskLevel === 'Low' ? 'Stage 0 — Normal' : riskLevel === 'Medium' ? 'Stage 1 — Mild' : 'Stage 2+';
-  const riskVariant = riskLevel === 'Low' ? 'low' : riskLevel === 'Medium' ? 'med' : 'high';
+  // Handle empty state for new real user
+  const isEmpty = mode === 'real' && !data;
+  const displayData = data || {
+    today: { todayScore: 0, overallScore: 0, progress: 0 },
+    weekly: [],
+    distribution: { focus: 0, memory: 0, logic: 0 },
+    risk: { level: "Low", value: 0 },
+    aiSummary: "Start your first test to see insights."
+  };
+
+  // Calendar mapping logic for Demo vs Real
+  const calendarDays = Array.from({ length: 30 }, (_, i) => i + 1);
+  const activeDays = mode === 'demo' ? [2, 4, 6, 7, 9, 10] : (displayData.activeDays || []);
+
+  // Compute SVG chart path dynamically
+  const maxWeeklyScore = Math.max(...displayData.weekly.map(d => d.score), 100);
+  const points = displayData.weekly.map((d, index) => {
+    const x = (index / Math.max(displayData.weekly.length - 1, 1)) * 800;
+    const y = 200 - (d.score / maxWeeklyScore) * 160; 
+    return `${x},${y}`;
+  }).join(' L ');
+
+  const chartPath = points.length > 0 ? `M ${points}` : 'M0,200 L800,200';
+  const fillPath = points.length > 0 ? `${chartPath} L 800,200 L 0,200 Z` : 'M0,200 L800,200 Z';
 
   return (
-    <div className="w-full">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 mb-3">
-        <Card>
-          <CardLabel>Risk level</CardLabel>
-          <CardBigValue style={{ color: riskColor }}>{riskLevel}</CardBigValue>
-          <div className="mt-1">
-            <Badge variant={riskVariant}>{riskStage}</Badge>
+    <>
+      <div className="flex-1 p-8 overflow-y-auto w-full">
+        <section className="mb-12">
+          <div className="mb-8">
+            <h2 className="text-4xl font-extrabold tracking-tight text-on-surface">Good morning, {userName.split(' ')[0]}.</h2>
+            <p className="text-on-surface-variant mt-2 text-lg">
+              {isEmpty 
+                ? "Start your first test to track your mental readiness." 
+                : "Your cognitive clarity is 4% higher than last week."}
+            </p>
           </div>
-        </Card>
-        
-        <Card>
-          <CardLabel>Risk score</CardLabel>
-          <CardBigValue>{typeof riskScore === 'number' ? riskScore.toFixed(2) : riskScore}</CardBigValue>
-          <MiniLabel className="mt-1 block">out of 1.0</MiniLabel>
-        </Card>
-        
-        <Card>
-          <CardLabel>Trend (7 days)</CardLabel>
-          <CardBigValue className="text-[#1D9E75]">{trend}</CardBigValue>
-          <MiniLabel className="mt-1 block">Slight improvement</MiniLabel>
-        </Card>
-        
-        <Card>
-          <CardLabel>Task streak</CardLabel>
-          <CardBigValue>{streak}</CardBigValue>
-          <MiniLabel className="mt-1 block">Keep it up!</MiniLabel>
-        </Card>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 mb-3">
-        <Card>
-          <SectionTitle>Risk score — 30 days</SectionTitle>
-          <div className="relative h-[110px] mt-1.5">
-            <svg viewBox="0 0 300 90" preserveAspectRatio="none" className="w-full h-full">
-              <polyline fill="none" stroke="#6d5cf7" strokeWidth="1.5" points="0,60 15,55 30,58 45,52 60,54 75,50 90,48 105,45 120,47 135,42 150,44 165,40 180,43 195,38 210,40 225,36 240,38 255,34 270,32 285,30 300,28"/>
-              <polygon fill="#6d5cf7" fillOpacity="0.08" points="0,60 15,55 30,58 45,52 60,54 75,50 90,48 105,45 120,47 135,42 150,44 165,40 180,43 195,38 210,40 225,36 240,38 255,34 270,32 285,30 300,28 300,90 0,90"/>
-              <line x1="0" y1="72" x2="300" y2="72" stroke="rgba(0,0,0,0.1)" strokeWidth="0.5"/>
-              <text x="0" y="88" style={{fontSize: "9px", fill: "#888780"}}>30d ago</text>
-              <text x="240" y="88" style={{fontSize: "9px", fill: "#888780"}}>Today</text>
-              <text x="246" y="26" style={{fontSize: "9px", fill: "#6d5cf7", fontWeight: 500}}>{typeof riskScore === 'number' ? riskScore.toFixed(2) : riskScore}</text>
-            </svg>
-          </div>
-          
-          <MiniLabel className="mt-2 block">MCI stage</MiniLabel>
-          <div className="flex gap-1 mt-2">
-            <div className="flex-1 h-1.5 rounded-full bg-[#1D9E75]"></div>
-            <div className="flex-1 h-1.5 rounded-full bg-[var(--color-background-secondary)]"></div>
-            <div className="flex-1 h-1.5 rounded-full bg-[var(--color-background-secondary)]"></div>
-            <div className="flex-1 h-1.5 rounded-full bg-[var(--color-background-secondary)]"></div>
-          </div>
-          <div className="flex justify-between mt-1">
-            <MiniLabel>Stage 0</MiniLabel>
-            <MiniLabel>Stage 3</MiniLabel>
-          </div>
-        </Card>
-
-        <Card>
-          <SectionTitle>Memory performance — last 7 tests</SectionTitle>
-          <div className="mb-3 space-y-1.5">
-            {(gameScores.memory !== undefined ? [
-              { label: 'Memory', score: gameScores.memory, color: '#6d5cf7' },
-              { label: 'Language', score: gameScores.language, color: '#1D9E75' },
-              { label: 'Pattern', score: gameScores.pattern, color: '#3B8BD4' },
-            ] : [
-              { label: 'Memory Mosaic', score: 0.84, color: '#6d5cf7' },
-              { label: 'Word Garden', score: 0.72, color: '#1D9E75' },
-              { label: 'Path Finder', score: 0.68, color: '#3B8BD4' },
-            ]).map(item => (
-              <div key={item.label} className="flex items-center gap-2">
-                <MiniLabel className="w-20 text-right">{item.label}</MiniLabel>
-                <div className="flex-1 h-2 bg-[var(--color-background-secondary)] rounded-full overflow-hidden">
-                  <div className="h-full rounded-full" style={{width: `${(item.score * 100)}%`, backgroundColor: item.color}}></div>
-                </div>
-                <MiniLabel>{typeof item.score === 'number' ? item.score.toFixed(2) : item.score}</MiniLabel>
+          <div className="relative bg-gradient-to-br from-primary to-primary-container rounded-xl p-8 text-white flex flex-col md:flex-row items-center justify-between overflow-hidden shadow-xl group">
+            <div className="relative z-10 max-w-md">
+              <span className="bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-widest mb-4 inline-block">Daily Assessment</span>
+              <h3 className="text-3xl font-bold mb-4">Start your morning cognitive checkup.</h3>
+              <p className="text-white/80 mb-8">It takes only 5 minutes to track your mental readiness and focus levels for the day ahead.</p>
+              <button 
+                onClick={() => navigate('/games')}
+                className="bg-white text-primary px-8 py-3 rounded-full font-bold shadow-lg hover:bg-surface transition-all flex items-center gap-2 group-hover:scale-105"
+              >
+                Start Cognitive Test
+                <span className="material-symbols-outlined">arrow_forward</span>
+              </button>
+            </div>
+            
+            <div className="relative mt-8 md:mt-0 opacity-80 group-hover:opacity-100 transition-opacity">
+              <div className="w-64 h-64 bg-secondary-container/30 rounded-full blur-3xl absolute -right-20 -top-20"></div>
+              <div className="w-48 h-48 bg-tertiary-container/20 rounded-full blur-2xl absolute -left-10 -bottom-10"></div>
+              <div className="relative z-10 p-4 bg-white/10 backdrop-blur-md rounded-lg border border-white/20 transform rotate-3">
+                <img alt="Assessment Graphic" className="rounded-lg shadow-2xl w-48 h-48 object-cover" src="https://images.unsplash.com/photo-1555949963-aa79dcee981c?auto=format&fit=crop&q=80&w=300" />
               </div>
-            ))}
+            </div>
           </div>
-          
-          <SectionTitle>Typing speed trend (WPM)</SectionTitle>
-          <div className="relative h-[70px]">
-            <svg viewBox="0 0 300 60" preserveAspectRatio="none" className="w-full h-full">
-              <polyline fill="none" stroke="#1D9E75" strokeWidth="1.5" points="0,40 50,36 100,38 150,30 200,32 250,28 300,25"/>
-              <polygon fill="#1D9E75" fillOpacity="0.08" points="0,40 50,36 100,38 150,30 200,32 250,28 300,25 300,60 0,60"/>
-              <text x="256" y="22" style={{fontSize: "9px", fill: "#1D9E75", fontWeight: 500}}>42 WPM</text>
-            </svg>
-          </div>
-        </Card>
-      </div>
+        </section>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 mb-3">
-        <Card>
-          <div className="flex justify-between items-center mb-1.5">
-            <SectionTitle className="mb-0">Today's tasks</SectionTitle>
-            <MiniLabel>{doneCount} / {totalCount} done</MiniLabel>
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          {/* Card 1 */}
+          <div className="bg-surface-container-lowest p-6 rounded-lg ring-1 ring-outline-variant/10 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-on-surface-variant text-sm font-medium">Today's Score</span>
+              <div className="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center">
+                <span className="material-symbols-outlined text-primary text-lg">psychology</span>
+              </div>
+            </div>
+            <div className="flex items-end gap-2">
+              <span className="text-3xl font-bold">{displayData.today.todayScore}</span>
+              {!isEmpty && (
+                <span className="text-secondary text-sm font-bold flex items-center mb-1">
+                  <span className="material-symbols-outlined text-sm">trending_up</span> 2%
+                </span>
+              )}
+            </div>
+            <div className="mt-4 w-full bg-surface-container-low h-1.5 rounded-full">
+              <div className="bg-primary h-full rounded-full transition-all" style={{width: `${displayData.today.todayScore}%`}}></div>
+            </div>
           </div>
-          
-          <div className="flex flex-col">
-            {tasks.length > 0 ? tasks.map((t, i) => (
-              <TaskItem key={t._id || i} done={t.done} dotColor={t.dotColor || '#6d5cf7'} label={t.label || t.title} />
-            )) : (
-              <>
-                <TaskItem done dotColor="#6d5cf7" label="Complete today's brain activity" />
-                <TaskItem done dotColor="#1D9E75" label="Check in with your companion" />
-                <TaskItem done dotColor="#3B8BD4" label="5-minute gentle stretching" />
-                <TaskItem done={false} dotColor="#EF9F27" label="Name 5 things you can see right now" />
-                <TaskItem done={false} dotColor="#1D9E75" label="Call a family member today" />
-              </>
+
+          {/* Card 2 */}
+          <div className="bg-surface-container-lowest p-6 rounded-lg ring-1 ring-outline-variant/10 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-on-surface-variant text-sm font-medium">Overall Score</span>
+              <div className="w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center">
+                <span className="material-symbols-outlined text-secondary text-lg">bolt</span>
+              </div>
+            </div>
+            <div className="flex items-end gap-2">
+              <span className="text-3xl font-bold">{displayData.today.overallScore}</span>
+            </div>
+          </div>
+
+          {/* Card 3 */}
+          <div className="bg-surface-container-lowest p-6 rounded-lg ring-1 ring-outline-variant/10 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-on-surface-variant text-sm font-medium">Progress</span>
+              <div className="w-8 h-8 rounded-full bg-tertiary-fixed flex items-center justify-center">
+                <span className="material-symbols-outlined text-tertiary text-lg">memory</span>
+              </div>
+            </div>
+            <div className="flex items-end gap-2">
+              <span className="text-3xl font-bold">{displayData.today.progress}%</span>
+              {!isEmpty && (
+                <span className="text-secondary text-sm font-bold flex items-center mb-1">
+                  <span className="material-symbols-outlined text-sm">check_circle</span> stable
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Card 4 */}
+          <div className="bg-surface-container-lowest p-6 rounded-lg ring-1 ring-outline-variant/10 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-on-surface-variant text-sm font-medium">Risk Level</span>
+              <div className="w-8 h-8 rounded-full bg-error-container flex items-center justify-center">
+                <span className="material-symbols-outlined text-error text-lg">shield</span>
+              </div>
+            </div>
+            <div className="flex items-end gap-2">
+              <span className={`text-xl font-bold uppercase tracking-tight ${isEmpty ? 'text-gray-400' : 'text-secondary'}`}>
+                {isEmpty ? 'N/A' : displayData.risk.level}
+              </span>
+            </div>
+          </div>
+        </section>
+
+        <section className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* Line Chart Area */}
+          <div className="lg:col-span-8 bg-surface-container-lowest p-8 rounded-xl ring-1 ring-outline-variant/10 shadow-sm">
+            <div className="flex justify-between items-center mb-10">
+              <div>
+                <h3 className="text-xl font-bold">Weekly Performance</h3>
+                <p className="text-sm text-on-surface-variant">Your score trends over the last 7 days</p>
+              </div>
+            </div>
+            {isEmpty ? (
+              <div className="w-full h-64 flex items-center justify-center text-gray-400">
+                Complete assessments to see your chart here.
+              </div>
+            ) : (
+              <div className="w-full h-64 bg-surface-container-low/50 rounded-lg flex items-end justify-between px-8 pb-4 relative overflow-hidden">
+                <svg className="absolute inset-0 w-full h-full" viewBox="0 0 800 200" preserveAspectRatio="none">
+                  <path d={chartPath} fill="none" stroke="#0058bf" strokeLinecap="round" strokeWidth="4" />
+                  <path d={fillPath} fill="url(#grad1)" opacity="0.1" />
+                  <defs>
+                    <linearGradient id="grad1" x1="0%" x2="0%" y1="0%" y2="100%">
+                      <stop offset="0%" style={{stopColor: '#0058bf', stopOpacity: 1}} />
+                      <stop offset="100%" style={{stopColor: '#0058bf', stopOpacity: 0}} />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <div className="text-[10px] text-on-surface-variant absolute bottom-2 left-0 w-full flex justify-between px-4">
+                  {displayData.weekly.map((d, i) => <span key={i}>{d.day}</span>)}
+                </div>
+              </div>
             )}
           </div>
-        </Card>
 
-        <Card>
-          <SectionTitle>Activity — last 52 weeks</SectionTitle>
-          <Heatmap />
-          <div className="flex gap-1 mt-2 items-center">
-            <MiniLabel>Less</MiniLabel>
-            <div className="w-3 h-3 rounded-[2px] bg-[var(--color-background-secondary)]"></div>
-            <div className="w-3 h-3 rounded-[2px] bg-[#9FE1CB]"></div>
-            <div className="w-3 h-3 rounded-[2px] bg-[#1D9E75]"></div>
-            <div className="w-3 h-3 rounded-[2px] bg-[#0F6E56]"></div>
-            <MiniLabel>More</MiniLabel>
-          </div>
-        </Card>
-      </div>
-
-      <Card>
-        <SectionTitle>Today's analysis</SectionTitle>
-        <div className="bg-[var(--color-background-secondary)] border-[0.5px] border-[var(--color-border-secondary)] rounded-lg px-3 py-2.5 text-xs text-[var(--color-text-secondary)] mt-2.5 leading-relaxed">
-          {analysis}
-        </div>
-        
-        <div className="mt-2.5 flex gap-2 flex-wrap">
-          {riskBadges.length > 0 ? riskBadges.map((b, i) => (
-            <Badge key={i} variant={b.variant || 'low'} className="px-2.5 py-1 text-xs">{b.text}</Badge>
-          )) : (
-            <>
-              <Badge variant="low" className="px-2.5 py-1 text-xs">Game: Low risk</Badge>
-              <Badge variant="low" className="px-2.5 py-1 text-xs">Chat: Low risk</Badge>
-              <Badge variant="low" className="px-2.5 py-1 text-xs">Webcam: Low risk</Badge>
-            </>
-          )}
-        </div>
-      </Card>
-
-      {/* KPI Stats Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
-        <ScoreCard 
-          title="Overall Risk Score" 
-          score="0.16" 
-          total="1.0"
-          subtitle="Stage 0 — Normal Cognitive Function" 
-          icon="🛡️" 
-          colorClass={{ bg: 'bg-green-100 text-green-600' }}
-          trendText="-0.04 this week"
-        />
-        <ScoreCard 
-          title="Average Game Score" 
-          score="84" 
-          total="100"
-          subtitle="Top 15% for your age group" 
-          icon="🎮" 
-          colorClass={{ bg: 'bg-indigo-100 text-indigo-600' }}
-          trendText="+5% from last week"
-        />
-        <ScoreCard 
-          title="Chat Health Index" 
-          score="92" 
-          total="100"
-          subtitle="High linguistic coherence & recall" 
-          icon="💬" 
-          colorClass={{ bg: 'bg-blue-100 text-blue-600' }}
-        />
-        <ScoreCard 
-          title="Webcam Emotion Score" 
-          score="Calm" 
-          subtitle="Consistent positive baseline detected" 
-          icon="📷" 
-          colorClass={{ bg: 'bg-amber-100 text-amber-600' }}
-        />
-      </div>
-
-      {/* Middle Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4">
-        
-        {/* Left Column: Calendar & Tasks */}
-        <div className="lg:col-span-1 space-y-6">
-          <DailyProgressCalendar />
-          
-          <div className="h-[400px]">
-            <TasksListWidget />
-          </div>
-        </div>
-
-        {/* Right Column: Charts & Analysis */}
-        <div className="lg:col-span-2 space-y-6 flex flex-col">
-          
-          <ProgressChart 
-            title="Memory Performance Trend" 
-            data={chartData} 
-            dataKey="memory" 
-            gradientColor="#3B82F6" 
-          />
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1">
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">Detailed Analysis</h3>
-              <div className="space-y-4">
-                <div className="p-4 rounded-xl bg-gray-50 border border-gray-100">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-lg">⌨️</span>
-                    <h4 className="font-semibold text-gray-800 text-sm">Typing Rhythm</h4>
-                  </div>
-                  <p className="text-xs text-gray-500 leading-relaxed">
-                    Consistent speed with low backspace rate (8%). Fine motor skills remain stable.
-                  </p>
-                </div>
-                
-                <div className="p-4 rounded-xl bg-gray-50 border border-gray-100">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-lg">🧠</span>
-                    <h4 className="font-semibold text-gray-800 text-sm">Short-term Memory</h4>
-                  </div>
-                  <p className="text-xs text-gray-500 leading-relaxed">
-                    Scored above the 70th percentile for the 66-75 age band in today's Sequence Game.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-2xl p-6 shadow-sm border border-indigo-100 relative overflow-hidden">
-              {/* Illustration graphic abstraction */}
-              <div className="absolute right-0 bottom-0 opacity-20 transform translate-x-1/4 translate-y-1/4">
-                <svg width="150" height="150" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M50 0C77.6142 0 100 22.3858 100 50C100 77.6142 77.6142 100 50 100C22.3858 100 0 77.6142 0 50C0 22.3858 22.3858 0 50 0Z" fill="#818CF8"/>
-                  <circle cx="30" cy="30" r="10" fill="white"/>
-                  <circle cx="70" cy="70" r="15" fill="white"/>
-                  <circle cx="20" cy="80" r="5" fill="white"/>
-                </svg>
-              </div>
-
-              <h3 className="text-lg font-bold text-indigo-900 mb-2 relative z-10">Doctor's Note</h3>
-              <p className="text-sm text-indigo-800/80 relative z-10 leading-relaxed mt-4">
-                "Your test consistency this month is excellent. We are seeing sustained baseline stability in your reaction times. Keep up the daily check-ins — the AI chatbot is picking up very positive grammatical structures."
-              </p>
+          {/* Donut Chart */}
+          <div className="lg:col-span-4 flex flex-col gap-8">
+            <div className="bg-surface-container-lowest p-8 rounded-xl ring-1 ring-outline-variant/10 shadow-sm flex-1">
+              <h3 className="text-xl font-bold mb-6">Cognitive Distribution</h3>
               
-              <div className="mt-6 flex items-center gap-3 relative z-10">
-                <div className="w-10 h-10 rounded-full bg-indigo-200 border-2 border-white shadow-sm flex items-center justify-center font-bold text-indigo-700">
-                  Dr
-                </div>
-                <div>
-                  <div className="text-xs font-bold text-indigo-900">Dr. Sarah Jenkins</div>
-                  <div className="text-[10px] text-indigo-600">Neurologist</div>
-                </div>
+              {isEmpty ? (
+                <div className="flex h-32 items-center justify-center text-gray-400 mb-6">No data yet</div>
+              ) : (
+                <>
+                  <div className="flex justify-center mb-6">
+                    <div className="relative w-32 h-32 flex items-center justify-center">
+                      <svg className="w-full h-full transform -rotate-90">
+                        <circle cx="64" cy="64" fill="transparent" r="54" stroke="#e2e7ff" strokeWidth="12" />
+                        <circle cx="64" cy="64" fill="transparent" r="54" stroke="#4b41e1" strokeDasharray="339" strokeDashoffset={339 * (1 - displayData.distribution.focus/100)} strokeWidth="12" />
+                        <circle cx="64" cy="64" fill="transparent" r="54" stroke="#006a61" strokeDasharray="339" strokeDashoffset={339 * (1 - displayData.distribution.memory/100)} strokeWidth="12" />
+                      </svg>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <span className="text-xl font-bold border rounded-full px-2" style={{borderColor: 'transparent'}}>Data</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="w-3 h-3 rounded-full bg-tertiary"></span>
+                        <span>Focus</span>
+                      </div>
+                      <span className="font-bold">{displayData.distribution.focus}%</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="w-3 h-3 rounded-full bg-secondary"></span>
+                        <span>Memory</span>
+                      </div>
+                      <span className="font-bold">{displayData.distribution.memory}%</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="w-3 h-3 rounded-full bg-primary-fixed"></span>
+                        <span>Logic</span>
+                      </div>
+                      <span className="font-bold">{displayData.distribution.logic}%</span>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </section>
+      </div>
+
+      {/* Right Side Panel */}
+      <aside className="w-80 bg-surface-container-low p-6 hidden xl:flex flex-col gap-6 font-body shrink-0">
+        <div className="bg-surface-container-lowest p-6 rounded-xl ring-1 ring-outline-variant/10 shadow-sm">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="font-bold text-on-surface">Daily Presence</h3>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">This Month</span>
+            </div>
+          </div>
+          <div className="grid grid-cols-7 gap-y-3 gap-x-1 text-center">
+            {['Mo','Tu','We','Th','Fr','Sa','Su'].map(day => (
+              <span key={day} className="text-[10px] font-bold text-on-surface-variant">{day}</span>
+            ))}
+            {Array.from({length: 3}, (_, i) => (
+              <span key={`empty-${i}`} className="text-xs text-transparent py-1">.</span>
+            ))}
+            {calendarDays.map((day) => {
+              const isActive = activeDays.includes(day);
+              const isToday = day === new Date().getDate() && mode === 'real'; // Rough today indicator
+              return (
+                <span 
+                  key={day} 
+                  className={`text-xs flex items-center justify-center rounded-full w-8 h-8 mx-auto font-medium
+                    ${isActive ? 'bg-primary-fixed/30 text-on-surface' : 'text-on-surface-variant'}
+                    ${isToday ? 'bg-primary text-white font-bold ring-2 ring-primary-fixed' : ''}
+                  `}
+                >
+                  {day}
+                </span>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* AI Insight */}
+        <div className="bg-surface-container-lowest/60 backdrop-blur-sm border border-outline-variant/20 p-6 rounded-lg relative overflow-hidden shadow-sm">
+          <div className="absolute -top-4 -right-4 w-12 h-12 bg-tertiary blur-2xl opacity-50"></div>
+          <div className="flex items-center gap-2 mb-4">
+            <span className="material-symbols-outlined text-tertiary">auto_awesome</span>
+            <span className="text-xs font-bold uppercase tracking-widest text-tertiary">AI Summary</span>
+          </div>
+          <p className="text-sm text-on-surface-variant leading-relaxed mb-4">
+            {displayData.aiSummary}
+          </p>
+        </div>
+
+        {/* Risk Status Visual */}
+        <div className="bg-surface-container-lowest p-6 rounded-lg ring-1 ring-outline-variant/10 shadow-sm text-center">
+          <h4 className="text-sm font-medium text-on-surface-variant mb-4">Cognitive Risk Status</h4>
+          <div className="flex justify-center mb-4">
+            <div className="relative w-24 h-24">
+              <svg className="w-full h-full transform rotate-180">
+                <circle cx="48" cy="48" fill="transparent" r="40" stroke="#e2e7ff" strokeDasharray="125 251" strokeWidth="8"/>
+                {(!isEmpty) && (
+                  <circle cx="48" cy="48" fill="transparent" r="40" stroke={displayData.risk.level.includes("Low") ? "#006a61" : "#ba1a1a"} strokeDasharray={`${displayData.risk.value * 2.5} 251`} strokeWidth="8"/>
+                )}
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center mt-2">
+                <span className="text-lg font-bold text-secondary">{isEmpty ? 'N/A' : 'Optimum'}</span>
               </div>
             </div>
           </div>
-
+          <p className="text-xs text-on-surface-variant">No cognitive stressors detected.</p>
         </div>
-      </div>
-    </div>
+      </aside>
+    </>
   );
 }

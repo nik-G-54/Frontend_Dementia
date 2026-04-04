@@ -6,10 +6,12 @@
 // ============================================================
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   LineChart, Line, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid
 } from "recharts";
+import TargetPracticeGame from "../components/games/TargetPracticeGame";
 
 /* ─── Injected CSS ─── */
 const GAME_STYLES = `
@@ -57,6 +59,7 @@ const GAME_STYLES = `
     flex-direction: column;
     align-items: center;
     padding: 20px 16px 40px;
+    width: 100%;
   }
   .cg-gradient-btn {
     background: linear-gradient(135deg, #60a5fa, #6366f1);
@@ -88,7 +91,7 @@ const GAME_STYLES = `
 const BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 const getToken = () => localStorage.getItem("token") || "";
 const GAME_TO_SCORE_ID = {
-  reaction: "reaction", sequence: "sequence", number: "number",
+  reaction: "reaction", number: "number",
   verbal: "colorWord", chimp: "wordScramble",
 };
 
@@ -116,7 +119,7 @@ const ALL_GAMES = [
   { id: "number",   title: "Number Memory",    icon: "#",  iconBg: "#fce7f3", iconColor: "#db2777", desc: "Test your numerical memory by memorizing increasingly long numbers and typing them back." },
   { id: "verbal",   title: "Verbal Memory",    icon: "Aa", iconBg: "#dbeafe", iconColor: "#2563eb", desc: "Keep as many words in short-term memory as possible. You'll see words one at a time — decide if each is NEW or SEEN." },
   { id: "chimp",    title: "Chimp Test",       icon: "🐵", iconBg: "#fef9c3", iconColor: "#ca8a04", desc: "Click the numbers in ascending order. After clicking '1', all other numbers become hidden. Beat the chimps!" },
-  { id: "target",   title: "Target Practice",  icon: "◎",  iconBg: "#fee2e2", iconColor: "#dc2626", desc: "Click the red target as quickly as possible in 15 rounds. Test your visual processing speed and hand-eye coordination." },
+  { id: "target",   title: "Target Practice",  icon: "◎",  iconBg: "#fee2e2", iconColor: "#dc2626", desc: "Click the red target as quickly as possible in 15 rounds. Test your visual processing speed and hand-eye coordination." }
 ];
 
 /* ─── Local storage helpers ─── */
@@ -367,126 +370,45 @@ function ReactionTimeGame({ onGameOver }) {
   );
 }
 
-/* ═══════════════════════════════════════════
-   GAME 2: SEQUENCE MEMORY
-   3×3 grid, tiles flash, repeat sequence
-═══════════════════════════════════════════ */
-function SequenceMemoryGame({ onGameOver }) {
-  const [tiles, setTiles] = useState(Array(9).fill("idle"));
-  const [phase, setPhase] = useState("watch"); // watch, input
-  const [sequence, setSequence] = useState([]);
-  const [userSeq, setUserSeq] = useState([]);
-  const [level, setLevel] = useState(1);
-  const [score, setScore] = useState(0);
-  const [lives, setLives] = useState(MAX_LIVES);
-  const [errors, setErrors] = useState(0);
-  const timerRef = useRef(null);
-  const gameStart = useRef(Date.now());
 
-  function playSequence(seq) {
-    setPhase("watch"); setUserSeq([]);
-    let i = 0;
-    function next() {
-      if (i > 0) setTiles(t => { const n = [...t]; n[seq[i - 1]] = "idle"; return n; });
-      if (i >= seq.length) { setTimeout(() => setPhase("input"), 300); return; }
-      setTiles(t => { const n = [...t]; n[seq[i]] = "active"; return n; });
-      i++;
-      timerRef.current = setTimeout(next, 600);
-    }
-    timerRef.current = setTimeout(next, 500);
-  }
-
-  useEffect(() => {
-    const first = [Math.floor(Math.random() * 9)];
-    setSequence(first);
-    playSequence(first);
-    return () => clearTimeout(timerRef.current);
-  }, []);
-
-  function handleTile(idx) {
-    if (phase !== "input") return;
-    const expected = sequence[userSeq.length];
-    if (idx === expected) {
-      setTiles(t => { const n = [...t]; n[idx] = "correct"; return n; });
-      setTimeout(() => setTiles(t => { const n = [...t]; n[idx] = "idle"; return n; }), 250);
-      const next = [...userSeq, idx];
-      setUserSeq(next);
-      if (next.length === sequence.length) {
-        const newScore = score + level;
-        setScore(newScore);
-        const newLevel = level + 1;
-        setLevel(newLevel);
-        const newSeq = [...sequence, Math.floor(Math.random() * 9)];
-        setSequence(newSeq);
-        setTimeout(() => playSequence(newSeq), 500);
-      }
-    } else {
-      setTiles(t => { const n = [...t]; n[idx] = "wrong"; return n; });
-      const newLives = lives - 1;
-      setLives(newLives);
-      const newErrors = errors + 1;
-      setErrors(newErrors);
-
-      if (newLives <= 0) {
-        setTimeout(() => {
-          onGameOver({ score, level, errors: newErrors, duration: Date.now() - gameStart.current });
-        }, 500);
-      } else {
-        setTimeout(() => {
-          playSequence(sequence);
-        }, 1000);
-      }
-    }
-  }
-
-  const tileStyle = (state) => ({
-    background: state === "active" ? "linear-gradient(135deg, #60a5fa, #6366f1)"
-              : state === "correct" ? "#22c55e"
-              : state === "wrong" ? "#ef4444"
-              : "#fff",
-    border: state === "idle" ? "2px solid #c7d2e0" : "2px solid transparent",
-    borderRadius: 14,
-    cursor: phase === "input" ? "pointer" : "default",
-    transition: "all 0.15s",
-    boxShadow: state === "active" ? "0 4px 16px rgba(99,102,241,0.4)" : "none",
-  });
-
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-4 px-1">
-        <div>
-          <span className="text-sm font-semibold text-gray-500">Level {level}</span>
-          <span className="text-xs text-gray-400 ml-3">{phase === "watch" ? "Watch carefully..." : "Your turn!"}</span>
-        </div>
-        <LivesBar lives={lives} max={MAX_LIVES} />
-      </div>
-      <div className="grid grid-cols-3 gap-6 max-w-[650px] w-full mx-auto aspect-square">
-        {tiles.map((state, i) => (
-          <div key={i} onClick={() => handleTile(i)}
-               className="aspect-square rounded-xl"
-               style={tileStyle(state)} />
-        ))}
-      </div>
-    </div>
-  );
-}
 
 /* ═══════════════════════════════════════════
    GAME 3: NUMBER MEMORY
    Show number → timer bar → type it back
 ═══════════════════════════════════════════ */
 function NumberMemoryGame({ onGameOver }) {
-  const [phase, setPhase] = useState("show"); // show, input, correct, wrong
+  const [phase, setPhase] = useState("show"); // show, input
   const [digits, setDigits] = useState(3);
   const [number, setNumber] = useState("");
   const [input, setInput] = useState("");
   const [score, setScore] = useState(0);
   const [level, setLevel] = useState(1);
-  const [progress, setProgress] = useState(100);
-  const [lives, setLives] = useState(MAX_LIVES);
-  const [errors, setErrors] = useState(0);
+  const [bestScore, setBestScore] = useState(0);
   const timerRef = useRef(null);
   const gameStart = useRef(Date.now());
+  const [aiInsight, setAiInsight] = useState("Try grouping numbers into pairs to extend your working memory capacity.");
+  const [accuracy, setAccuracy] = useState(92);
+  const [focus, setFocus] = useState("High");
+
+  useEffect(() => {
+    // Attempt to fetch from stats
+    apiGet("/game-scores/summary").then(res => {
+        if(res && res.number) {
+            setBestScore(res.number.bestScore || 0);
+            if(res.number.accuracy) setAccuracy(res.number.accuracy);
+        }
+    }).catch(()=>{});
+    
+    // ML fallback/placeholder insight
+    apiGet("/dashboard").then(res => {
+        if(res && res.data) {
+           if(res.data.aiSummary) setAiInsight(res.data.aiSummary);
+        }
+    }).catch(()=>{});
+
+    startRound(3); 
+    return () => clearInterval(timerRef.current);
+  }, []);
 
   function genNumber(len) {
     let n = String(Math.floor(Math.random() * 9) + 1);
@@ -496,86 +418,163 @@ function NumberMemoryGame({ onGameOver }) {
 
   function startRound(d) {
     const n = genNumber(d);
-    setNumber(n); setInput(""); setPhase("show"); setProgress(100);
-    const totalMs = 1200 + d * 400;
-    const step = 50;
-    let elapsed = 0;
-    timerRef.current = setInterval(() => {
-      elapsed += step;
-      setProgress(Math.max(0, 100 - (elapsed / totalMs) * 100));
-      if (elapsed >= totalMs) {
-        clearInterval(timerRef.current);
-        setPhase("input");
-      }
-    }, step);
+    setNumber(n); setInput(""); setPhase("show");
   }
 
-  useEffect(() => { startRound(3); return () => clearInterval(timerRef.current); }, []);
+  function handleReady() {
+    setPhase("input");
+  }
 
-  function handleSubmit() {
-    if (!input) return;
-    if (input === number) {
-      setPhase("correct"); setScore(s => s + digits);
-      const nextD = digits + 1; setDigits(nextD); setLevel(l => l + 1);
-      setTimeout(() => startRound(nextD), 900);
+  function handleKeypad(val) {
+    if (val === 'backspace') {
+      setInput(prev => prev.slice(0, -1));
+    } else if (val === 'check') {
+      handleSubmit();
     } else {
-      setPhase("wrong");
-      const newLives = lives - 1;
-      setLives(newLives);
-      const newErrors = errors + 1;
-      setErrors(newErrors);
-
-      if (newLives <= 0) {
-        setTimeout(() => {
-          onGameOver({ score, level, errors: newErrors, displayScore: `Level ${level}`, unit: "level reached", duration: Date.now() - gameStart.current });
-        }, 1200);
-      } else {
-        setTimeout(() => {
-          startRound(digits);
-        }, 1500);
+      if (input.length < number.length) {
+        setInput(prev => prev + val);
       }
     }
   }
 
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-4 px-1">
-        <span className="text-sm font-semibold text-gray-500">Level {level}</span>
-        <LivesBar lives={lives} max={MAX_LIVES} />
-      </div>
-      {phase === "show" && (
-        <div className="text-center">
-          <div className="text-xs text-gray-400 mb-1">Memorize this number</div>
-          <div className="text-7xl md:text-9xl font-extrabold text-gray-900 cg-number-pop tracking-widest my-14 h-[25vh] flex items-center justify-center font-mono">{number}</div>
-          <div className="h-3 bg-gray-200 rounded-full overflow-hidden max-w-2xl mx-auto">
-            <div className="h-full bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full transition-all duration-50"
-                 style={{ width: `${progress}%` }} />
-          </div>
-          <div className="text-xs text-gray-400 mt-2">{digits} digits</div>
-        </div>
-      )}
+  function handleSubmit() {
+    if (!input) return;
+    if (input === number) {
+      setScore(s => s + digits);
+      const nextD = digits + 1; 
+      setDigits(nextD); 
+      setLevel(l => l + 1);
+      if (nextD > bestScore) setBestScore(nextD);
+      startRound(nextD);
+    } else {
+      onGameOver({ score, level, errors: 1, displayScore: `Level ${level}`, unit: "level reached", duration: Date.now() - gameStart.current });
+    }
+  }
 
-      {(phase === "input" || phase === "correct" || phase === "wrong") && (
-        <div className="text-center">
-          <div className="text-2xl font-bold text-gray-900 mb-1">Enter the number</div>
-          <div className="text-sm text-gray-400 mb-4">{digits} digits</div>
-          <input type="number" autoFocus value={input}
-                 onChange={e => setInput(e.target.value)}
-                 onKeyDown={e => e.key === "Enter" && handleSubmit()}
-                 className="w-full max-w-2xl mx-auto block border-4 border-blue-300 rounded-2xl px-6 py-5 text-4xl text-gray-900 font-mono text-center outline-none focus:border-indigo-500 transition-colors mb-6"
-                 style={{ background: phase === "correct" ? "#dcfce7" : phase === "wrong" ? "#fee2e2" : "#fff" }} />
-          {phase === "input" && (
-            <button className="cg-gradient-btn max-w-sm mx-auto block" onClick={handleSubmit}>Submit</button>
+  const renderInputSlots = () => {
+    let text = "";
+    for(let i=0; i<number.length; i++) {
+        if (input[i]) text += input[i] + " ";
+        else text += "_ ";
+    }
+    return text.trim();
+  };
+
+  return (
+    <div className="w-full max-w-screen-xl relative mx-auto">
+      <div className="flex flex-col items-center mb-16 text-center">
+        <span className="bg-[#86f2e4] text-[#006f66] px-4 py-1 rounded-full text-sm font-semibold tracking-wide uppercase mb-4">
+          Round {level}: Recall
+        </span>
+        <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-[#131b2e] mb-2">Number Memory</h2>
+        <p className="text-[#414755] text-lg">Retain the sequence precisely as shown.</p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+        <div className="lg:col-span-7 flex flex-col items-stretch">
+          {phase === "show" && (
+            <div className="bg-[#f2f3ff] rounded-xl p-12 flex flex-col items-center justify-center h-full min-h-[400px] relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-[#d8e2ff]/20 rounded-full -mr-20 -mt-20 blur-3xl"></div>
+              <div className="z-10 flex flex-col items-center">
+                <div className="text-7xl md:text-9xl font-black text-[#0058bf] tracking-[0.2em] mb-12 drop-shadow-sm">
+                  {number.split('').join(' ')}
+                </div>
+                <button onClick={handleReady} className="bg-gradient-to-r from-[#0058bf] to-[#006fef] text-[#ffffff] px-12 py-4 rounded-full font-bold text-xl shadow-lg hover:shadow-xl active:scale-95 transition-all flex items-center gap-3">
+                  <span>I'm Ready</span>
+                  <span className="material-symbols-outlined">arrow_forward</span>
+                </button>
+              </div>
+            </div>
           )}
-          {phase === "correct" && <div className="text-green-600 font-bold text-lg">✓ Correct!</div>}
-          {phase === "wrong" && (
-            <div>
-              <div className="text-red-500 font-bold text-lg mb-1">✗ Incorrect</div>
-              <div className="text-sm text-gray-500">The number was <strong className="text-gray-800">{number}</strong></div>
+
+          {phase === "input" && (
+            <div className="bg-[#ffffff] rounded-xl p-8 h-full shadow-sm ring-1 ring-[#c1c6d7]/30">
+              <div className="mb-8">
+                <p className="text-sm font-bold text-[#414755] uppercase tracking-widest mb-4">Instruction</p>
+                <h3 className="text-2xl font-bold text-[#131b2e]">Enter the number you just saw.</h3>
+              </div>
+              <div className="bg-[#f2f3ff] rounded-lg p-6 mb-8 min-h-[80px] flex items-center justify-center mx-auto">
+                <span className="text-5xl font-mono font-bold tracking-widest text-[#0058bf]">
+                  {renderInputSlots()}
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
+                  <button key={num} onClick={() => handleKeypad(num.toString())} className="h-20 bg-[#eaedff] text-2xl font-bold rounded-xl hover:bg-[#e2e7ff] transition-colors active:scale-90 text-[#131b2e]">
+                    {num}
+                  </button>
+                ))}
+                <button onClick={() => handleKeypad('backspace')} className="h-20 bg-[#ffdad6] text-[#ba1a1a] rounded-xl flex items-center justify-center hover:bg-[#ffdad6]/80 transition-colors">
+                  <span className="material-symbols-outlined">backspace</span>
+                </button>
+                <button onClick={() => handleKeypad('0')} className="h-20 bg-[#eaedff] text-2xl font-bold rounded-xl hover:bg-[#e2e7ff] transition-colors active:scale-90 text-[#131b2e]">
+                  0
+                </button>
+                <button onClick={() => handleKeypad('check')} className="h-20 bg-[#006a61] text-[#ffffff] rounded-xl flex items-center justify-center hover:opacity-90 transition-opacity">
+                  <span className="material-symbols-outlined">check</span>
+                </button>
+              </div>
             </div>
           )}
         </div>
-      )}
+
+        {/* AI Insights / Sidebar */}
+        <div className="lg:col-span-5 flex flex-col gap-8 h-full">
+          <div className="bg-[#dae2fd]/60 backdrop-blur-md border border-[#c1c6d7]/20 p-8 rounded-xl relative overflow-hidden shadow-sm">
+            <div className="absolute -right-10 -bottom-10 w-32 h-32 bg-[#4b41e1]/20 blur-3xl rounded-full"></div>
+            <div className="flex items-start gap-4 mb-6 relative z-10">
+              <div className="p-3 bg-[#645efb] rounded-full text-white">
+                <span className="material-symbols-outlined">auto_awesome</span>
+              </div>
+              <div>
+                <h4 className="font-bold text-lg text-[#131b2e]">AI Performance Insight</h4>
+                <p className="text-sm text-[#414755]">Real-time memory analysis</p>
+              </div>
+            </div>
+            <div className="bg-white/50 p-4 rounded-lg border border-white/20 relative z-10">
+              <p className="text-sm leading-relaxed italic text-[#131b2e]">"{aiInsight}"</p>
+            </div>
+          </div>
+
+          <div className="bg-[#f2f3ff] p-8 rounded-xl shadow-sm">
+            <h4 className="font-bold text-[#131b2e] mb-6 flex items-center gap-2">
+              <span className="material-symbols-outlined text-[#006a61]">trending_up</span>
+              Daily Progress
+            </h4>
+            <div className="space-y-6">
+              <div>
+                <div className="flex justify-between text-sm font-medium mb-2">
+                  <span className="text-gray-800">Accuracy</span>
+                  <span className="text-[#006a61]">{accuracy}%</span>
+                </div>
+                <div className="w-full h-2 bg-[#e2e7ff] rounded-full overflow-hidden">
+                  <div className="bg-[#006a61] h-full rounded-full transition-all duration-500" style={{ width: `${accuracy}%` }}></div>
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between text-sm font-medium mb-2">
+                  <span className="text-gray-800">Focus Level</span>
+                  <span className="text-[#4b41e1]">{focus}</span>
+                </div>
+                <div className="w-full h-2 bg-[#e2e7ff] rounded-full overflow-hidden">
+                  <div className="bg-[#4b41e1] h-full w-[85%] rounded-full"></div>
+                </div>
+              </div>
+            </div>
+            <div className="mt-8 pt-8 border-t border-[#c1c6d7]/30">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-[#e2e7ff] flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[#4b41e1]">emoji_events</span>
+                </div>
+                <div>
+                  <p className="text-xs text-[#414755] uppercase tracking-widest font-bold">Best Score</p>
+                  <p className="text-lg font-bold text-[#131b2e]">{bestScore || 0} Digits</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -743,7 +742,7 @@ function ChimpTestGame({ onGameOver }) {
         <LivesBar lives={lives} max={3} />
       </div>
       <div className="relative bg-gray-50 rounded-2xl border border-gray-200 overflow-hidden w-full mx-auto"
-           style={{ height: "60vh", minHeight: 500, maxWidth: 900 }}>
+           style={{ height: "65vh", minHeight: 600, maxWidth: "100%" }}>
         {squares.map(sq => !sq.clicked && (
           <div key={sq.num}
                onClick={() => handleSquareClick(sq.num)}
@@ -761,77 +760,7 @@ function ChimpTestGame({ onGameOver }) {
   );
 }
 
-/* ═══════════════════════════════════════════
-   GAME 6: TARGET PRACTICE
-   Navy bg, click red targets, 15 rounds
-═══════════════════════════════════════════ */
-function TargetPracticeGame({ onGameOver }) {
-  const TOTAL = 15;
-  const [round, setRound] = useState(1);
-  const [target, setTarget] = useState(null);
-  const [times, setTimes] = useState([]);
-  const startRef = useRef(null);
-  const gameStart = useRef(Date.now());
-  const areaRef = useRef(null);
 
-  function placeTarget() {
-    const x = 50 + Math.random() * 800; // scaled for larger width
-    const y = 50 + Math.random() * 400; // scaled for larger height
-    setTarget({ x, y });
-    startRef.current = Date.now();
-  }
-
-  useEffect(() => { placeTarget(); }, []);
-
-  function handleTargetClick(e) {
-    e.stopPropagation();
-    const ms = Date.now() - startRef.current;
-    const next = [...times, ms];
-    setTimes(next);
-    const r = round + 1;
-    setRound(r);
-    if (r > TOTAL) {
-      const avg = Math.round(next.reduce((a, b) => a + b, 0) / next.length);
-      onGameOver({
-        score: Math.max(0, Math.round((800 - avg) / 40)),
-        displayScore: `${avg}ms`, unit: "average time",
-        level: TOTAL, errors: 0, reactionTime: avg,
-        duration: Date.now() - gameStart.current
-      });
-    } else {
-      placeTarget();
-    }
-  }
-
-  return (
-    <div>
-      <div className="text-center text-sm font-semibold text-gray-300 mb-3">Round {round} / {TOTAL}</div>
-      <div ref={areaRef}
-           className="relative rounded-2xl overflow-hidden shadow-inner"
-           style={{ background: "#0f172a", width: "100%", height: "60vh", minHeight: 500, maxWidth: 1000, margin: "0 auto" }}>
-        {target && (
-          <div onClick={handleTargetClick}
-               className="absolute cursor-pointer"
-               style={{
-                 left: target.x - 50, top: target.y - 50,
-                 width: 100, height: 100, borderRadius: "50%",
-                 background: "radial-gradient(circle at 40% 38%, #f87171, #dc2626)",
-                 boxShadow: "0 0 24px rgba(220,38,38,0.5)",
-                 display: "flex", alignItems: "center", justifyContent: "center",
-               }}>
-            <div style={{ width: 14, height: 14, borderRadius: "50%", background: "#fff" }} />
-          </div>
-        )}
-      </div>
-      {times.length > 0 && (
-        <div className="text-center mt-3 text-sm text-gray-500">
-          Last: <strong className="text-gray-700">{times[times.length - 1]}ms</strong>
-          {times.length >= 2 && <span className="ml-3">Avg: <strong className="text-indigo-600">{Math.round(times.reduce((a, b) => a + b, 0) / times.length)}ms</strong></span>}
-        </div>
-      )}
-    </div>
-  );
-}
 
 /* ═══════════════════════════════════════════
    GAME ACTIVITY DIALOG
@@ -995,6 +924,8 @@ function ReportDashboard({ onShowActivity }) {
    MAIN GAMES PAGE
 ═══════════════════════════════════════════ */
 export default function GamesPage() {
+  const navigate = useNavigate();
+
   useEffect(() => {
     if (!document.getElementById("cg-games-css")) {
       const s = document.createElement("style");
@@ -1033,31 +964,179 @@ export default function GamesPage() {
   }
 
   const GameComponents = {
-    reaction: ReactionTimeGame, sequence: SequenceMemoryGame,
+    reaction: ReactionTimeGame,
     number: NumberMemoryGame, verbal: VerbalMemoryGame,
     chimp: ChimpTestGame, target: TargetPracticeGame,
   };
   const ActiveComponent = activeGame ? GameComponents[activeGame] : null;
 
   return (
-    <div className="cg-game-page">
+    <div className="cg-game-page flex-1 w-full">
       {showActivity && <GameActivityDialog onClose={() => setShowActivity(false)} />}
 
       {phase === "home" && (
-        <div className="w-full max-w-4xl">
-          <div className="text-center mb-10">
-            <h1 className="text-3xl font-extrabold text-gray-900 mb-2">Test your cognitive limits</h1>
-            <p className="text-gray-500 text-sm max-w-lg mx-auto">
-              Your brain is capable of amazing things — CogGuard offers free, fun tests to measure and improve your cognitive performance
-            </p>
+        <div className="flex-grow max-w-screen-2xl mx-auto w-full pb-8">
+          {/* Hero Header Section */}
+          <section className="mb-12 relative overflow-hidden rounded-xl p-8 lg:p-12 bg-gradient-to-br from-[#0058bf] to-[#006fef] text-white">
+            <div className="relative z-10 max-w-2xl">
+              <h2 className="text-4xl lg:text-5xl font-bold tracking-tight mb-4">Neuralis Training</h2>
+              <p className="text-lg opacity-90 font-light leading-relaxed mb-8">
+                Our clinically validated cognitive exercises are designed to sharpen pattern recognition, memory retention, and processing speed.
+              </p>
+              <div className="flex flex-wrap items-center gap-4">
+                <button onClick={() => selectGame('number')} className="bg-white text-[#0058bf] px-8 py-3 rounded-full font-semibold hover:bg-opacity-90 transition-all flex items-center gap-2">
+                  <span className="material-symbols-outlined">play_arrow</span>
+                  Daily Drill
+                </button>
+                <button onClick={() => navigate('/reports')} className="bg-transparent border border-white/30 text-white px-8 py-3 rounded-full font-semibold hover:bg-white/10 transition-all">
+                  View Progress
+                </button>
+              </div>
+            </div>
+            {/* Abstract visual element */}
+            <div className="absolute right-0 top-0 h-full w-1/3 opacity-20 pointer-events-none hidden md:block">
+              <img alt="Neural Pattern" className="object-cover h-full w-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1YZCc5X44dQ7kbsIi7pvVkHQWaPr6M_oOWceeDL3aEXVJHFgOzd4iyeA89cOYFMtPq8KHBL996SLuRtCMX4VK_OFvyIajm3xBJvXJIM4tZdw_7k5mEQ0BGCWNuIcz_Y3X1sXGBuIZjCJhnC-gSLk3e3YHWvkia3ddJ3SHGj9916btxSdQxDoKlNp2TOSGnIw6eodneDlNGy3ikV_N7bxjje3D52Rn9PiXqUGjbKzc69tJJS_8PTvEgaMPNnKGYQ3WZPhJa2Yy3mI"/>
+            </div>
+          </section>
+
+          {/* Grid of Game Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+            {/* Game 1: Pattern Recognition */}
+            <div className="bg-white/60 backdrop-blur-xl border border-[#c1c6d7]/20 p-8 rounded-lg flex flex-col group hover:shadow-xl transition-all duration-500 cursor-pointer" onClick={() => selectGame('chimp')}>
+              <div className="w-14 h-14 rounded-2xl bg-[#006fef]/10 flex items-center justify-center text-[#006fef] mb-6 group-hover:scale-110 transition-transform">
+                <span className="material-symbols-outlined text-3xl">grid_view</span>
+              </div>
+              <div className="mb-auto">
+                <h3 className="text-xl font-bold mb-2 text-[#131b2e]">Pattern Recognition</h3>
+                <div className="inline-flex px-3 py-1 bg-[#86f2e4] text-[#006f66] text-[10px] uppercase font-bold tracking-wider rounded-full mb-4">
+                  Visual-Spatial
+                </div>
+                <p className="text-[#414755] text-sm leading-relaxed mb-6">
+                  Analyze complex visual sequences and predict the next logical iteration to strengthen your perceptual reasoning.
+                </p>
+              </div>
+              <button className="w-full py-4 bg-[#0058bf] text-white rounded-full font-semibold flex items-center justify-center gap-2 active:scale-95 transition-transform">
+                Start Game
+                <span className="material-symbols-outlined text-sm">arrow_forward</span>
+              </button>
+            </div>
+
+            {/* Game 2: Target Practice */}
+            {/* <div className="bg-white/60 backdrop-blur-xl border border-[#c1c6d7]/20 p-8 rounded-lg flex flex-col group hover:shadow-xl transition-all duration-500 cursor-pointer" onClick={() => selectGame('target')}>
+              <div className="w-14 h-14 rounded-2xl bg-[#dc2626]/10 flex items-center justify-center text-[#dc2626] mb-6 group-hover:scale-110 transition-transform">
+                <span className="material-symbols-outlined text-3xl">track_changes</span>
+              </div>
+              <div className="mb-auto">
+                <h3 className="text-xl font-bold mb-2 text-[#131b2e]">Target Practice</h3>
+                <div className="inline-flex px-3 py-1 bg-[#fee2e2] text-[#dc2626] text-[10px] uppercase font-bold tracking-wider rounded-full mb-4">
+                  Visual-Motor Speed
+                </div>
+                <p className="text-[#414755] text-sm leading-relaxed mb-6">
+                  Click the red target as quickly as possible in 15 rounds. Test your visual processing speed and hand-eye coordination.
+                </p>
+              </div>
+              <button className="w-full py-4 bg-[#fee2e2] text-[#dc2626] rounded-full font-semibold flex items-center justify-center gap-2 hover:bg-[#dc2626] hover:text-white transition-all active:scale-95">
+                Start Game
+                <span className="material-symbols-outlined text-sm">arrow_forward</span>
+              </button>
+            </div> */}
+
+            {/* Game 3: Number Memory */}
+            <div className="bg-white/60 backdrop-blur-xl border border-[#c1c6d7]/20 p-8 rounded-lg flex flex-col group hover:shadow-xl transition-all duration-500 cursor-pointer" onClick={() => selectGame('number')}>
+              <div className="w-14 h-14 rounded-2xl bg-[#006a61]/10 flex items-center justify-center text-[#006a61] mb-6 group-hover:scale-110 transition-transform">
+                <span className="material-symbols-outlined text-3xl">123</span>
+              </div>
+              <div className="mb-auto">
+                <h3 className="text-xl font-bold mb-2 text-[#131b2e]">Number Memory</h3>
+                <div className="inline-flex px-3 py-1 bg-[#86f2e4] text-[#006f66] text-[10px] uppercase font-bold tracking-wider rounded-full mb-4">
+                  Executive Function
+                </div>
+                <p className="text-[#414755] text-sm leading-relaxed mb-6">
+                  Recall long strings of digits with precision. A classic diagnostic for measuring information processing span.
+                </p>
+              </div>
+              <button className="w-full py-4 bg-[#dae2fd] text-[#0058bf] rounded-full font-semibold flex items-center justify-center gap-2 hover:bg-[#0058bf] hover:text-white transition-all active:scale-95">
+                Start Game
+                <span className="material-symbols-outlined text-sm">arrow_forward</span>
+              </button>
+            </div>
+
+            {/* Game 4: Verbal Memory */}
+            <div className="bg-white/60 backdrop-blur-xl border border-[#c1c6d7]/20 p-8 rounded-lg flex flex-col group hover:shadow-xl transition-all duration-500 cursor-pointer" onClick={() => selectGame('verbal')}>
+              <div className="w-14 h-14 rounded-2xl bg-[#0058bf]/10 flex items-center justify-center text-[#0058bf] mb-6 group-hover:scale-110 transition-transform">
+                <span className="material-symbols-outlined text-3xl">spellcheck</span>
+              </div>
+              <div className="mb-auto">
+                <h3 className="text-xl font-bold mb-2 text-[#131b2e]">Verbal Memory</h3>
+                <div className="inline-flex px-3 py-1 bg-[#dae2fd] text-[#0058bf] text-[10px] uppercase font-bold tracking-wider rounded-full mb-4">
+                  Linguistic Center
+                </div>
+                <p className="text-[#414755] text-sm leading-relaxed mb-6">
+                  Test your ability to distinguish between seen and new words in a rapidly scrolling list. Improves semantic recognition.
+                </p>
+              </div>
+              <button className="w-full py-4 bg-[#dae2fd] text-[#0058bf] rounded-full font-semibold flex items-center justify-center gap-2 hover:bg-[#0058bf] hover:text-white transition-all active:scale-95">
+                Start Game
+                <span className="material-symbols-outlined text-sm">arrow_forward</span>
+              </button>
+            </div>
+
+            {/* Game 5: Reaction Time */}
+            <div className="bg-white/60 backdrop-blur-xl border border-[#c1c6d7]/20 p-8 rounded-lg flex flex-col group hover:shadow-xl transition-all duration-500 cursor-pointer" onClick={() => selectGame('reaction')}>
+              <div className="w-14 h-14 rounded-2xl bg-[#645efb]/10 flex items-center justify-center text-[#645efb] mb-6 group-hover:scale-110 transition-transform">
+                <span className="material-symbols-outlined text-3xl">bolt</span>
+              </div>
+              <div className="mb-auto">
+                <h3 className="text-xl font-bold mb-2 text-[#131b2e]">Reaction Time</h3>
+                <div className="inline-flex px-3 py-1 bg-[#86f2e4] text-[#006f66] text-[10px] uppercase font-bold tracking-wider rounded-full mb-4">
+                  Processing Speed
+                </div>
+                <p className="text-[#414755] text-sm leading-relaxed mb-6">
+                  Click as fast as possible when visual cues change. Vital for monitoring neuro-motor response efficiency.
+                </p>
+              </div>
+              <button className="w-full py-4 bg-[#dae2fd] text-[#0058bf] rounded-full font-semibold flex items-center justify-center gap-2 hover:bg-[#0058bf] hover:text-white transition-all active:scale-95">
+                Start Game
+                <span className="material-symbols-outlined text-sm">arrow_forward</span>
+              </button>
+            </div>
+
+            {/* Custom Bento Card: AI Insights */}
+            <div className="bg-[#e2dfff] border border-[#c1c6d7]/20 p-8 rounded-lg flex flex-col justify-between overflow-hidden relative shadow-sm">
+              <div className="relative z-10">
+                <span className="material-symbols-outlined text-[#4b41e1] mb-4">auto_awesome</span>
+                <h3 className="text-xl font-bold text-[#0f0069] mb-2">Personalized Path</h3>
+                <p className="text-[#3323cc] text-sm">Your performance in <span className="font-bold">Verbal Memory</span> is in the top 5% of users today. Try the Daily Drill to maintain your streak.</p>
+              </div>
+              <div className="mt-8 relative z-10">
+                <div className="flex -space-x-2">
+                  <div className="w-8 h-8 rounded-full bg-[#89f5e7] border-2 border-white"></div>
+                  <div className="w-8 h-8 rounded-full bg-[#d8e2ff] border-2 border-white"></div>
+                  <div className="w-8 h-8 rounded-full bg-[#c3c0ff] border-2 border-white"></div>
+                  <div className="w-8 h-8 rounded-full bg-[#dae2fd] border-2 border-white flex items-center justify-center text-[10px] font-bold text-[#0058bf]">+12</div>
+                </div>
+                <p className="text-[10px] text-[#3323cc] mt-2 opacity-70">Clinicians monitoring this session</p>
+              </div>
+              <div className="absolute -right-12 -bottom-12 w-48 h-48 bg-[#0058bf]/10 rounded-full blur-3xl"></div>
+            </div>
           </div>
-          <HomeGrid games={ALL_GAMES} onSelect={selectGame} />
-          <ReportDashboard onShowActivity={() => setShowActivity(true)} />
+          
+          {/* Footer */}
+          <div className="mt-16 pt-8 border-t border-gray-200">
+            <div className="flex flex-col md:flex-row justify-between items-center text-sm text-gray-400">
+              <p>© 2024 Lucid Sanctuary • Medical Grade Cognitive Diagnostics</p>
+              <div className="flex space-x-6 mt-4 md:mt-0">
+                <a className="hover:text-[#0058bf] transition-colors" href="#">Privacy Protocol</a>
+                <a className="hover:text-[#0058bf] transition-colors" href="#">Clinical Standards</a>
+                <a className="hover:text-[#0058bf] transition-colors" href="#">Support</a>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
       {phase === "start" && gameMeta && (
-        <div className="w-full max-w-5xl mx-auto px-4">
+        <div className="w-full max-w-screen-2xl mx-auto px-4 lg:px-8">
           <button onClick={goHome} className="text-gray-400 text-sm mb-5 hover:text-indigo-600 transition-colors bg-transparent border-none cursor-pointer">
             ← Back to Games
           </button>
@@ -1066,18 +1145,18 @@ export default function GamesPage() {
       )}
 
       {phase === "playing" && gameMeta && ActiveComponent && (
-        <div className="w-full max-w-5xl mx-auto px-4">
+        <div className="w-full max-w-screen-2xl mx-auto px-4 lg:px-8">
           <button onClick={goHome} className="text-gray-400 text-sm mb-4 hover:text-indigo-600 transition-colors bg-transparent border-none cursor-pointer">
             ← Quit
           </button>
-          <div className="cg-game-card">
+          <div className={activeGame === "number" ? "mt-4" : "cg-game-card"}>
             <ActiveComponent key={activeGame} age={userAge} onGameOver={handleGameOver} />
           </div>
         </div>
       )}
 
       {phase === "result" && gameMeta && result && (
-        <div className="w-full max-w-5xl mx-auto px-4">
+        <div className="w-full max-w-screen-2xl mx-auto px-4 lg:px-8">
           <ResultScreen game={gameMeta} result={result} onPlayAgain={playAgain} onGoBack={goHome} onNext={playNext} />
         </div>
       )}

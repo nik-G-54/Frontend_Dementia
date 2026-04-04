@@ -1,64 +1,66 @@
-import { Link, useLocation, useNavigate } from "react-router-dom"
-import { cn } from "../../lib/utils"
+import React from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
-export function Navbar() {
-  const location = useLocation()
-  const navigate = useNavigate()
-  const userData = JSON.parse(localStorage.getItem('user') || '{}')
-  const userName = userData.name || "User"
-  
-  const navItems = [
-    { name: "Dashboard", path: "/" },
-    { name: "Games", path: "/games" },
-    { name: "Chat", path: "/chat" },
-    { name: "Tasks", path: "/tasks" },
-    { name: "Reports", path: "/reports" },
-  ]
+const navItems = [
+  { name: 'Dashboard', path: '/dashboard', icon: 'dashboard' },
+  { name: 'Games',     path: '/games',     icon: 'extension' },
+  { name: 'Reports',   path: '/reports',   icon: 'assessment' },
+  { name: 'Chat',      path: '/chat',      icon: 'forum' },
+  { name: 'Tasks',     path: '/tasks',     icon: 'person' },
+];
+
+export function Sidebar() {
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const handleLogout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    navigate('/login')
-  }
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('mode');
+    navigate('/');
+  };
 
   return (
-    <div className="flex items-center justify-between bg-[var(--color-background-primary)] border-[0.5px] border-[var(--color-border-tertiary)] rounded-xl py-2.5 px-4 mb-3.5">
-      <div className="text-[15px] font-medium text-[var(--color-text-primary)] shrink-0">
-        <span className="text-[#6d5cf7]">Cog</span>Guard
+    <aside className="h-screen w-20 fixed left-0 top-0 z-50 bg-slate-50 flex flex-col items-center py-8 border-r border-slate-100">
+      {/* Logo */}
+      <div className="mb-10">
+        <span className="text-xl font-bold text-blue-700">MV</span>
       </div>
-      
-      <div className="flex gap-1.5 hidden md:flex">
+
+      {/* Nav Items */}
+      <nav className="flex flex-col items-center gap-2 w-full flex-1">
         {navItems.map((item) => {
-          const isActive = location.pathname === item.path
+          const isActive = location.pathname === item.path;
           return (
             <Link
               key={item.name}
               to={item.path}
-              className={cn(
-                "text-[12px] px-2.5 py-1.5 rounded-md border-[0.5px] border-[var(--color-border-tertiary)] bg-transparent text-[var(--color-text-secondary)] hover:bg-[var(--color-background-secondary)] transition-colors",
-                isActive && "bg-[var(--color-background-info)] text-[var(--color-text-info)] border-[var(--color-border-info)] hover:bg-[var(--color-background-info)]"
-              )}
+              className={`w-full py-2.5 flex flex-col items-center transition-colors duration-200 group
+                ${isActive
+                  ? 'text-blue-700 border-r-[3px] border-blue-700 bg-blue-50/50'
+                  : 'text-slate-400 hover:text-blue-600 hover:bg-blue-50/30 border-r-[3px] border-transparent'
+                }`}
             >
-              {item.name}
+              <span className="material-symbols-outlined text-xl">{item.icon}</span>
+              <span className="text-[9px] font-semibold tracking-wider uppercase mt-1">{item.name}</span>
             </Link>
-          )
+          );
         })}
-      </div>
+      </nav>
 
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2 text-[13px] text-[var(--color-text-secondary)]">
-          <div className="w-7 h-7 rounded-full bg-[var(--color-background-info)] flex items-center justify-center text-[11px] font-medium text-[var(--color-text-info)] shrink-0">
-            {userName.substring(0, 2).toUpperCase()}
-          </div>
-          <span className="hidden sm:inline truncate max-w-[100px]">{userName}</span>
-        </div>
-        <button 
+      {/* Bottom Actions */}
+      <div className="flex flex-col items-center gap-5 mt-auto">
+        <button className="text-slate-400 hover:text-blue-600 transition-colors">
+          <span className="material-symbols-outlined">settings</span>
+        </button>
+        <button
           onClick={handleLogout}
-          className="text-xs text-[var(--color-text-tertiary)] hover:text-red-500 transition-colors"
+          className="text-slate-400 hover:text-red-500 transition-colors"
+          title="Logout"
         >
-          Logout
+          <span className="material-symbols-outlined">logout</span>
         </button>
       </div>
-    </div>
-  )
+    </aside>
+  );
 }
