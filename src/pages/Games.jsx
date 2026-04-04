@@ -338,34 +338,134 @@ function ReactionTimeGame({ onGameOver }) {
 
   useEffect(() => () => clearTimeout(timerRef.current), []);
 
-  const bgColors = { idle: "#f0f4f8", waiting: "#dc2626", ready: "#16a34a", tooearly: "#dc2626", result: "#3b82f6" };
+  const avgRT = times.length > 0 ? Math.round(times.reduce((a, b) => a + b, 0) / times.length) : "--";
+  const bestRT = times.length > 0 ? Math.min(...times) : "--";
+  const lastResult = times.length > 0 ? times[times.length - 1] : "--";
+
+  const phaseColors = {
+    idle: "bg-surface-container-high text-on-surface",
+    waiting: "bg-[#ba1a1a] text-white", // error
+    ready: "bg-[#006a61] text-white", // secondary
+    tooearly: "bg-[#ba1a1a] text-white",
+    result: "bg-primary text-white"
+  };
+
   const texts = {
-    idle: { main: "Click to Start", sub: "When you see green, click as fast as you can" },
-    waiting: { main: "Wait...", sub: "Wait for green" },
+    idle: { main: "Welcome", sub: "Click the circular interaction zone to begin" },
+    waiting: { main: "Wait...", sub: "Wait for the background to illuminate" },
     ready: { main: "Click!", sub: "Click as fast as you can!" },
     tooearly: { main: "Too Early!", sub: "Click to try again" },
-    result: { main: `${times[times.length - 1]}ms`, sub: `Round ${round - 1} of ${TOTAL_ROUNDS}` },
+    result: { main: `${lastResult} ms`, sub: `Round ${Math.max(1, round - 1)} of ${TOTAL_ROUNDS} completed` },
   };
 
   return (
-    <div className="w-full flex flex-col">
-      <div className="flex items-center justify-between mb-4 px-1">
-        <span className="text-sm font-semibold text-gray-500">Round {Math.max(1, round)} of {TOTAL_ROUNDS}</span>
-        <LivesBar lives={lives} max={MAX_LIVES} />
+    <div className="w-full flex flex-col animate-[fadeScaleIn_0.3s_ease-out]">
+      {/* Header Section */}
+      <div className="w-full mb-8 flex flex-col md:flex-row items-end justify-between gap-6">
+        <div>
+          <span className="text-primary font-bold tracking-[0.1em] text-xs uppercase mb-2 block">Reaction Protocol 04-A</span>
+          <h2 className="text-3xl md:text-5xl font-bold text-on-surface tracking-tighter">Neuro-Reflex Test</h2>
+        </div>
+        <div className="flex items-center gap-4 bg-surface-container-low px-4 py-2 rounded-full border border-outline-variant/10 shadow-sm">
+          <span className="text-xs font-bold uppercase tracking-widest text-on-surface-variant">LIVES:</span>
+          <LivesBar lives={lives} max={MAX_LIVES} />
+        </div>
       </div>
-      <div onClick={handleClick}
-           className="rounded-2xl flex items-center justify-center flex-col cursor-pointer select-none transition-colors duration-300 w-full"
-           style={{ background: bgColors[phase], minHeight: "65vh", color: phase === "idle" ? "#374151" : "#fff" }}>
-        <div className="text-6xl md:text-8xl font-extrabold mb-6">{texts[phase].main}</div>
-        <div className="text-2xl mt-4 opacity-80">{texts[phase].sub}</div>
-        {times.length > 0 && phase !== "result" && (
-          <div className="mt-4 flex gap-2 flex-wrap justify-center">
-            {times.map((ms, i) => (
-              <span key={i} className="bg-white/20 px-3 py-1 rounded-full text-xs font-semibold">{ms}ms</span>
+
+      <div className="w-full flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+        {/* Left: Clinical Insights / Stats */}
+        <div className="lg:col-span-3 flex flex-col gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-1 gap-4">
+            <div className="bg-surface-container-low px-6 py-4 rounded-xl flex flex-col shadow-sm border border-outline-variant/10">
+              <span className="text-on-surface-variant text-[10px] font-bold uppercase tracking-wider mb-1">Average RT</span>
+              <span className="text-3xl font-bold text-primary">{avgRT}<span className="text-sm font-medium opacity-60 ml-1">ms</span></span>
+            </div>
+            <div className="bg-surface-container-low px-6 py-4 rounded-xl flex flex-col shadow-sm border border-outline-variant/10">
+              <span className="text-on-surface-variant text-[10px] font-bold uppercase tracking-wider mb-1">Best RT</span>
+              <span className="text-3xl font-bold text-secondary">{bestRT}<span className="text-sm font-medium opacity-60 ml-1">ms</span></span>
+            </div>
+          </div>
+
+          <div className="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/10 mt-2 hidden lg:block">
+            <div className="flex items-center gap-2 mb-4 text-tertiary">
+              <span className="material-symbols-outlined text-xl">psychology</span>
+              <span className="text-xs font-bold uppercase tracking-widest">Cognitive State</span>
+            </div>
+            <p className="text-xs text-on-surface-variant leading-relaxed">
+              Neural baseline reacting to visual stimuli. Keep focus sharpened on the interaction zone for optimal tracking metrics during this protocol.
+            </p>
+          </div>
+        </div>
+
+        {/* Center: Core Game Area */}
+        <div className="lg:col-span-9 relative">
+          <div 
+            onClick={handleClick}
+            className={`w-full min-h-[400px] md:min-h-[500px] rounded-2xl overflow-hidden relative flex flex-col items-center justify-center p-6 md:p-12 transition-colors duration-200 cursor-pointer shadow-sm ${phaseColors[phase]}`}
+          >
+            {/* Subtle glow elements */}
+            <div className="absolute -top-24 -right-24 w-96 h-96 bg-white/5 blur-[100px] rounded-full"></div>
+            <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-white/5 blur-[100px] rounded-full"></div>
+
+            <div className="z-10 text-center flex flex-col items-center gap-8 w-full max-w-2xl pointer-events-none">
+              <div className="space-y-3">
+                <h3 className="text-4xl md:text-6xl font-bold tracking-tighter">{texts[phase].main}</h3>
+                <p className="text-base md:text-lg font-medium max-w-md mx-auto opacity-90">
+                  {texts[phase].sub}
+                </p>
+              </div>
+
+              {/* Central Interaction Button Graphic */}
+              <div className="group relative w-40 h-40 md:w-56 md:h-56 rounded-full flex items-center justify-center shadow-lg border-8 border-current/10 transition-transform">
+                <div className="absolute inset-2 md:inset-4 rounded-full border border-current/20 flex items-center justify-center">
+                  <div className="w-full h-full rounded-full bg-current/10 backdrop-blur-sm flex items-center justify-center">
+                    <span className="material-symbols-outlined text-5xl opacity-80">touch_app</span>
+                  </div>
+                </div>
+                {phase === "waiting" && <div className="absolute inset-0 rounded-full border-4 border-white/30 animate-pulse"></div>}
+                {phase === "ready" && <div className="absolute inset-0 rounded-full border-4 border-white/60 animate-ping"></div>}
+              </div>
+
+              {/* Status Overlay */}
+              <div className="flex items-center gap-4 md:gap-6 py-2 px-6 bg-black/5 backdrop-blur-md rounded-full mt-4 border border-current/10">
+                <div className="flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-full animate-pulse ${phase === 'waiting' ? 'bg-orange-400' : 'bg-green-400'}`}></span>
+                  <span className="text-[10px] font-bold tracking-widest uppercase opacity-80">Sensor Active</span>
+                </div>
+                <div className="w-px h-4 bg-current/20"></div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] uppercase font-bold opacity-60">Last:</span>
+                  <span className="text-xs font-bold">{lastResult} ms</span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Telemetry Footer */}
+      {times.length > 0 && (
+        <div className="w-full mt-8 animate-[fadeInUp_0.3s_ease-out]">
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="text-[10px] font-bold text-on-surface uppercase tracking-widest">Recent Session Telemetry</h4>
+            <span className="text-[10px] font-medium text-on-surface-variant bg-surface-container-high px-2 py-1 rounded">Session #{Date.now().toString().slice(-4)}</span>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            {times.map((ms, idx) => (
+              <div key={idx} className="flex flex-col bg-surface-container-lowest p-3 rounded-lg border border-outline-variant/10 shadow-sm hover:shadow-md transition-shadow">
+                <span className="text-[10px] font-bold text-outline uppercase mb-1">TRIAL {idx + 1}</span>
+                <div className="flex justify-between items-end">
+                  <span className="text-base font-bold text-on-surface">{ms} <span className="text-[10px] font-normal text-on-surface-variant">ms</span></span>
+                  <span className={`text-xs ${ms < 250 ? 'text-secondary' : ms > 400 ? 'text-error' : 'text-primary'}`}>
+                    {ms < 250 ? 'FAST' : ms > 400 ? 'SLOW' : 'AVG'}
+                  </span>
+                </div>
+              </div>
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1087,7 +1187,7 @@ export default function GamesPage() {
                 <span className="material-symbols-outlined text-3xl">bolt</span>
               </div>
               <div className="mb-auto">
-                <h3 className="text-xl font-bold mb-2 text-[#131b2e]">Reaction Time</h3>
+                <h3 className="text-xl font-bold mb-2 text-[#131b2e]">Neuro-Reflex Test</h3>
                 <div className="inline-flex px-3 py-1 bg-[#86f2e4] text-[#006f66] text-[10px] uppercase font-bold tracking-wider rounded-full mb-4">
                   Processing Speed
                 </div>

@@ -276,39 +276,23 @@ export default function Chat() {
 
   /* ═══════════ RENDER ═══════════ */
   return (
-    <div style={styles.page}>
-      {/* ── Animations + Responsive ── */}
+    <div className="flex flex-col bg-surface overflow-hidden w-full h-[calc(100vh-80px)] md:h-screen pt-20 pl-0 md:pl-20">
       <style>{`
         @keyframes bounce {
           0%, 80%, 100% { transform: translateY(0); }
           40% { transform: translateY(-8px); }
         }
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.4; }
-        }
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
         @keyframes fadeInUp {
           from { opacity: 0; transform: translateY(12px); }
           to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .chat-grid {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          max-width: 900px;
-          margin: 0 auto;
         }
         .slide-panel {
           position: fixed;
           top: 0; right: 0; bottom: 0;
           width: 400px;
           max-width: 100vw;
-          background: #faf9f7;
-          border-left: 1px solid rgba(0,0,0,0.1);
+          background: var(--color-surface);
+          border-left: 1px solid var(--color-outline-variant);
           box-shadow: -10px 0 30px rgba(0,0,0,0.06);
           transform: translateX(100%);
           transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -333,248 +317,217 @@ export default function Chat() {
           pointer-events: auto;
         }
       `}</style>
-
-      <div className="chat-grid">
-        {/* ════════════ LEFT: CHAT ════════════ */}
-        <div style={{ ...styles.leftCol, width: "100%" }}>
-          <div style={styles.card}>
-            {/* Header */}
-            <div style={styles.chatHeader}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <h1 style={{ fontSize: 16, fontWeight: 500, margin: 0 }}>Daily check-in</h1>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <select value={language} onChange={e => setLanguage(e.target.value)} style={{ padding: '6px 12px', outline: 'none', borderRadius: 8, border: '1px solid rgba(0,0,0,0.1)', background: '#f5f4f0', fontSize: 14, fontWeight: 500, color: '#5f5e5a' }}>
-                    <option value="english">English</option>
-                    <option value="hindi">Hindi</option>
-                    <option value="hinglish">Hinglish</option>
-                  </select>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <span style={{
-                      width: 8, height: 8, borderRadius: '50%', backgroundColor: '#22c55e',
-                      display: 'inline-block', animation: 'pulse 2s infinite'
-                    }} />
-                    <span style={{ fontSize: 13, color: '#22c55e', fontWeight: 500 }}>Active</span>
-                  </div>
-                </div>
-              </div>
-              <div style={{ fontSize: 16, fontWeight: 500, color: '#5f5e5a', fontVariantNumeric: 'tabular-nums' }}>
-                {fmtTimer(sessionTimer)}
-              </div>
-            </div>
-
-            {/* Messages */}
-            <div style={styles.messageList}>
-              {messages.map((m, i) => (
-                <div key={i} style={{
-                  display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start',
-                  animation: 'fadeInUp 0.3s ease-out'
-                }}>
-                  {m.role === 'assistant' && (
-                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
-                      <div style={styles.avatar}>CG</div>
-                      <div>
-                        <div style={styles.botBubble}>{m.content}</div>
-                        <div style={styles.timestamp}>{fmtTime(new Date())}</div>
-                      </div>
-                    </div>
-                  )}
-                  {m.role === 'user' && (
-                    <div>
-                      <div style={styles.userBubble}>{m.content}</div>
-                      <div style={{ ...styles.timestamp, textAlign: 'right' }}>{fmtTime(new Date())}</div>
-                    </div>
-                  )}
-                </div>
-              ))}
-              {isTyping && <TypingIndicator />}
-              <div ref={messagesEndRef} />
-            </div>
-
-            {/* Input area */}
-            <div style={styles.inputArea}>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
-                
-
-                <textarea
-                  ref={textareaRef}
-                  value={inputText}
-                  onChange={handleTextareaChange}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Type your message..."
-                  disabled={sessionEnded}
-                  rows={2}
-                  style={styles.textarea}
-                  aria-label="Chat message input"
-                />
-
-                <button
-                  onClick={handleSend}
-                  disabled={!inputText.trim() || sessionEnded}
-                  aria-label="Send message"
-                  style={{
-                    ...styles.sendBtn,
-                    opacity: inputText.trim() && !sessionEnded ? 1 : 0.5,
-                    cursor: inputText.trim() && !sessionEnded ? 'pointer' : 'not-allowed'
-                  }}
-                >
-                  <SendIcon />
-                  <span style={{ marginLeft: 6 }}>Send</span>
-                </button>
-              </div>
-
-              <p style={styles.hintText}>
-                Press Enter to send · Session ends automatically after 10 minutes
-              </p>
-            </div>
-
-            {/* End session button */}
-            {userMsgCount >= 3 && !sessionEnded && !result && (
-              <div style={{ padding: '0 16px 16px' }}>
-                <button
-                  onClick={handleEndSession}
-                  aria-label="End session and get results"
-                  style={styles.endSessionBtn}
-                >
-                  End session &amp; get results
-                </button>
-              </div>
-            )}
-
-            {/* Processing indicator */}
-            {isProcessing && (
-              <div style={styles.processingCard}>
-                <div style={{
-                  width: 28, height: 28, border: '3px solid #eeece6',
-                  borderTopColor: '#6d5cf7', borderRadius: '50%',
-                  animation: 'spin 0.8s linear infinite'
-                }} />
-                <span style={{ fontSize: 14, color: '#5f5e5a' }}>{processingText}</span>
-              </div>
-            )}
-
-            {/* Result card */}
-            {result && (
-              <div style={styles.resultCard}>
-                <div style={{ marginBottom: 8 }}>
-                  {riskBadge(result.riskLevel)}
-                </div>
-                {result.languageScore != null && (
-                  <p style={{ fontSize: 14, color: '#1a1a18', margin: '6px 0' }}>
-                    Language Score: <strong>{result.languageScore}</strong>
-                  </p>
-                )}
-                {result.explanation && (
-                  <p style={{ fontSize: 13, fontStyle: 'italic', color: '#5f5e5a', margin: '6px 0' }}>
-                    {result.explanation}
-                  </p>
-                )}
-                <p style={{ fontSize: 11, color: '#888780', marginTop: 8 }}>
-                  This is a cognitive wellness indicator only. Not a medical diagnosis.
-                </p>
-                <button
-                  onClick={() => navigate('/reports')}
-                  aria-label="View full report"
-                  style={styles.viewReportBtn}
-                >
-                  View full report
-                </button>
-              </div>
-            )}
-
-            {/* Non-submission processing text fallback */}
-            {!isProcessing && processingText && !result && (
-              <div style={{ padding: '0 16px 16px' }}>
-                <p style={{ fontSize: 13, color: '#854f0b', textAlign: 'center' }}>
-                  {processingText}
-                </p>
-              </div>
-            )}
+      
+      {/* Top Header inside Chat Canvas (Language & timer) */}
+      <div className="flex justify-between items-center px-6 py-4 border-b border-outline-variant/10 bg-surface/50 backdrop-blur-sm z-10">
+        <div className="flex items-center gap-4">
+          <h1 className="text-sm font-semibold text-on-surface">Daily check-in</h1>
+          <select value={language} onChange={e => setLanguage(e.target.value)} className="bg-surface-container-high px-3 py-1.5 rounded-lg text-xs font-medium border-none outline-none text-on-surface-variant focus:ring-1 focus:ring-primary">
+            <option value="english">English</option>
+            <option value="hindi">Hindi</option>
+            <option value="hinglish">Hinglish</option>
+          </select>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+            <span className="text-xs text-green-600 font-medium tracking-wide uppercase">Active</span>
           </div>
         </div>
+        <div className="text-sm font-medium text-on-surface-variant tabular-nums">
+          {fmtTimer(sessionTimer)}
+        </div>
+      </div>
 
-        
-        {/* PROGRESS DIALOG */}
-        <div className={`overlay ${isProgressOpen ? 'open' : ''}`} onClick={() => setIsProgressOpen(false)} />
-        <div className={`slide-panel ${isProgressOpen ? 'open' : ''}`}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-            <h2 style={{ fontSize: 20, margin: 0 }}>Progress Report</h2>
-            <button onClick={() => setIsProgressOpen(false)} style={{ background: '#fcebeb', color: '#e53e3e', border: 'none', borderRadius: '50%', width: 32, height: 32, fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+      {/* Chat Area */}
+      <div className="flex-1 overflow-y-auto px-6 py-8 md:px-24 space-y-8 scroll-smooth relative">
+        {/* Date/Context Indicator */}
+        <div className="flex justify-center">
+          <span className="text-[10px] font-medium tracking-wider uppercase bg-surface-container-high px-4 py-1 rounded-full text-on-surface-variant shadow-sm">Today - Cognitive Insight Session</span>
+        </div>
+
+        {/* Messages */}
+        {messages.map((m, i) => (
+          m.role === 'assistant' ? (
+            <div key={i} className="flex flex-col items-start max-w-2xl gap-2 animate-[fadeInUp_0.3s_ease-out]">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="bg-tertiary-container p-1 rounded-md shadow-sm">
+                  <span className="material-symbols-outlined text-white text-xs" style={{fontVariationSettings: "'FILL' 1"}}>auto_awesome</span>
+                </div>
+                <span className="text-xs font-semibold text-on-surface-variant tracking-wide uppercase">Lucid AI</span>
+              </div>
+              <div className="bg-surface-container-lowest text-on-surface p-5 rounded-tr-xl rounded-br-xl rounded-bl-xl shadow-md leading-relaxed relative group border border-outline-variant/10 hover:border-primary/20 transition-colors">
+                {m.content}
+                <div className="absolute -top-2 -right-2 w-4 h-4 bg-tertiary blur-lg opacity-20 group-hover:opacity-40 transition-opacity"></div>
+              </div>
+              <span className="text-[10px] text-outline ml-1">{fmtTime(new Date())}</span>
+            </div>
+          ) : (
+            <div key={i} className="flex flex-col items-end max-w-2xl ml-auto gap-2 animate-[fadeInUp_0.3s_ease-out] w-full">
+              <div className="bg-primary text-on-primary p-5 rounded-tl-xl rounded-br-xl rounded-bl-xl shadow-md leading-relaxed ml-auto selection:bg-primary-container selection:text-on-primary-container">
+                {m.content}
+              </div>
+              <span className="text-[10px] text-outline mr-1">{fmtTime(new Date())}</span>
+            </div>
+          )
+        ))}
+
+        {isTyping && (
+          <div className="flex flex-col items-start max-w-2xl gap-2 animate-[fadeInUp_0.2s_ease-out]">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="bg-tertiary-container p-1 rounded-md shadow-sm">
+                <span className="material-symbols-outlined text-white text-xs" style={{fontVariationSettings: "'FILL' 1"}}>auto_awesome</span>
+              </div>
+              <span className="text-xs font-semibold text-on-surface-variant tracking-wide uppercase">Lucid AI</span>
+            </div>
+            <div className="bg-surface-container-lowest text-on-surface p-5 rounded-tr-xl rounded-br-xl rounded-bl-xl shadow-sm border border-outline-variant/10 flex items-center gap-1.5 h-14">
+              {[0, 1, 2].map(i => (
+                <span key={i} style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: 'var(--color-tertiary)', display: 'inline-block', animation: `bounce 1.4s infinite ease-in-out ${i * 0.16}s` }} />
+              ))}
+            </div>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <div style={styles.rightCol}>
+        )}
+        
+        {/* Processing Indicator */}
+        {isProcessing && (
+          <div className="flex justify-center items-center gap-3 p-4 bg-surface-container-lowest rounded-full shadow-lg border border-outline-variant/10 w-max mx-auto animate-[fadeInUp_0.3s_ease-out]">
+            <div className="w-5 h-5 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+            <span className="text-sm font-medium text-on-surface-variant">{processingText}</span>
+          </div>
+        )}
+
+        {/* Result Card */}
+        {result && (
+          <div className="bg-surface-container-lowest p-6 rounded-2xl shadow-xl border border-outline-variant/20 max-w-sm mx-auto text-center mt-8 animate-[fadeInUp_0.4s_ease-out]">
+            <div className="mb-4">{riskBadge(result.riskLevel)}</div>
+            {result.languageScore != null && (
+              <p className="text-sm text-on-surface my-2 font-medium">Language Score: <span className="text-primary font-bold text-lg ml-1">{result.languageScore}</span></p>
+            )}
+            {result.explanation && <p className="text-xs italic text-on-surface-variant my-3 px-2 leading-relaxed">{result.explanation}</p>}
+            <p className="text-[10px] text-outline mt-4">This is a cognitive wellness indicator only. Not a medical diagnosis.</p>
+            <button onClick={() => navigate('/reports')} className="mt-5 w-full bg-primary hover:bg-primary-container text-on-primary font-medium py-3 rounded-xl transition-colors shadow-sm">View full report</button>
+          </div>
+        )}
+
+        {!isProcessing && processingText && !result && (
+           <div className="text-xs text-warning text-center mt-4">{processingText}</div>
+        )}
+
+        <div ref={messagesEndRef} className="h-4" />
+      </div>
+
+      {/* Input Section */}
+      <div className="p-6 md:px-24 md:pb-8 space-y-4 bg-gradient-to-t from-surface via-surface to-transparent shadow-[0_-20px_40px_-20px_rgba(0,0,0,0.05)] z-10 relative">
+        
+        {/* Text Input Area */}
+        <div className={`bg-surface-container-lowest rounded-3xl p-2 shadow-lg border border-outline-variant/20 flex items-center gap-3 max-w-4xl mx-auto transition-all duration-300 ${isListening ? 'ring-2 ring-primary border-transparent' : 'hover:border-outline-variant/40'}`}>
+          <button className="text-outline hover:text-primary p-2 transition-colors shrink-0 ml-1 rounded-full hover:bg-surface-container">
+            <span className="material-symbols-outlined text-xl">attach_file</span>
+          </button>
+          <input 
+            type="text"
+            ref={textareaRef}
+            value={inputText}
+            onChange={handleTextareaChange}
+            onKeyDown={handleKeyDown}
+            disabled={sessionEnded}
+            className="flex-1 bg-transparent border-none outline-none focus:ring-0 text-sm px-1 text-on-surface placeholder:text-on-surface-variant/50 min-w-0"
+            placeholder={sessionEnded ? "Session has ended." : "Ask anything about your cognitive health..."}
+          />
+          <button 
+            onClick={handleSend}
+            disabled={!inputText.trim() || sessionEnded}
+            className={`bg-primary-container text-on-primary-container h-12 w-12 shrink-0 rounded-2xl flex items-center justify-center transition-all duration-200 shadow-inner ${inputText.trim() && !sessionEnded ? 'hover:scale-105 hover:shadow-md active:scale-95 cursor-pointer' : 'opacity-40 cursor-not-allowed grayscale'}`}
+          >
+            <span className="material-symbols-outlined" style={{fontVariationSettings: "'FILL' 1"}}>send</span>
+          </button>
+        </div>
+
+        {/* Suggestion Pills / Actions */}
+        <div className="flex flex-wrap gap-2 justify-center pt-2">
+          {userMsgCount >= 3 && !sessionEnded && !result && (
+            <button onClick={handleEndSession} className="bg-primary/10 border border-primary/20 text-primary px-5 py-2 rounded-full text-xs font-semibold hover:bg-primary hover:text-on-primary transition-all shadow-sm flex items-center gap-2">
+              <span className="material-symbols-outlined text-[16px]">stop_circle</span>
+              End Session
+            </button>
+          )}
+          <button onClick={() => setIsProgressOpen(true)} className="bg-surface border border-outline-variant/30 text-on-surface-variant px-5 py-2 rounded-full text-xs font-medium hover:bg-surface-container-high hover:text-primary transition-all shadow-sm flex items-center gap-2 group">
+            <span className="material-symbols-outlined text-[16px] group-hover:text-primary transition-colors">monitoring</span>
+            View Dashboard
+          </button>
+        </div>
+
+        <p className="text-[10px] text-center text-on-surface-variant/60 tracking-wide pt-2">
+          Lucid AI provides insights based on your data. Consult a specialist for clinical diagnoses.
+        </p>
+      </div>
+
+      {/* PROGRESS DIALOG */}
+      <div className={`overlay ${isProgressOpen ? 'open' : ''}`} onClick={() => setIsProgressOpen(false)} />
+      <div className={`slide-panel ${isProgressOpen ? 'open' : ''}`}>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold text-on-surface flex items-center gap-2">
+            <span className="material-symbols-outlined text-primary">assessment</span>
+            Live Metrics
+          </h2>
+          <button onClick={() => setIsProgressOpen(false)} className="bg-surface-container-highest text-on-surface-variant hover:text-error hover:bg-error-container rounded-full w-8 h-8 flex items-center justify-center transition-colors">
+            <span className="material-symbols-outlined text-[20px]">close</span>
+          </button>
+        </div>
+        
+        <div className="flex flex-col gap-5">
           {/* Metric cards 2×2 */}
-          <div style={styles.card}>
-            <div style={styles.metricsGrid}>
-              <MetricCard label="words / min" value={liveMetrics.avgWPM} />
-              <MetricCard label="messages sent" value={liveMetrics.msgCount} />
-              <MetricCard
-                label="avg pause"
-                value={liveMetrics.avgPause > 0 ? (liveMetrics.avgPause / 1000).toFixed(1) + 's' : '—'}
-              />
-              <MetricCard
-                label="backspace rate"
-                value={(liveMetrics.backspaceRate * 100).toFixed(0) + '%'}
-              />
+          <div className="bg-surface-container-lowest border border-outline-variant/20 rounded-2xl p-4 shadow-sm">
+            <div className="grid grid-cols-2 gap-3">
+              <MetricCard label="Words / Min" value={liveMetrics.avgWPM} />
+              <MetricCard label="Messages" value={liveMetrics.msgCount} />
+              <MetricCard label="Avg Pause" value={liveMetrics.avgPause > 0 ? (liveMetrics.avgPause / 1000).toFixed(1) + 's' : '—'} />
+              <MetricCard label="Backspace" value={(liveMetrics.backspaceRate * 100).toFixed(0) + '%'} />
             </div>
           </div>
 
           {/* WPM Sparkline */}
-          <div style={styles.card}>
+          <div className="bg-surface-container-lowest border border-outline-variant/20 rounded-2xl p-4 shadow-sm w-full overflow-hidden">
             <WpmSparkline wpmHistory={liveMetrics.wpmHistory} />
           </div>
 
           {/* All signals table */}
-          <div style={styles.card}>
-            <div style={{ fontSize: 12, fontWeight: 500, color: '#5f5e5a', marginBottom: 10 }}>
-              All signals
+          <div className="bg-surface-container-lowest border border-outline-variant/20 rounded-2xl p-4 shadow-sm">
+            <div className="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-3 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
+              All Signals Tracker
             </div>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-              <tbody>
-                {[
-                  ['avgWPM', liveMetrics.avgWPM],
-                  ['wpmDelta', liveMetrics.wpmDelta],
-                  ['backspaceRate', liveMetrics.backspaceRate?.toFixed(3)],
-                  ['avgPause', liveMetrics.avgPause > 0 ? (liveMetrics.avgPause / 1000).toFixed(1) + 's' : '—'],
-                  ['repetitionCount', liveMetrics.repetitionCount],
-                  ['avgSentenceLength', liveMetrics.avgSentenceLength],
-                  ['messageCount', liveMetrics.msgCount],
-                  ['timeOfDay', liveMetrics.timeOfDay],
-                  ['sessionDuration', fmtTimer(Math.floor((liveMetrics.sessionDuration || 0) / 1000))],
-                ].map(([key, val]) => (
-                  <tr key={key} style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
-                    <td style={{
-                      padding: '6px 4px', color: '#5f5e5a', fontWeight: 400
-                    }}>{key}</td>
-                    <td style={{
-                      padding: '6px 4px', textAlign: 'right', fontWeight: 500,
-                      fontVariantNumeric: 'tabular-nums',
-                      color: key === 'wpmDelta' && val < 0 ? '#854f0b' : '#1a1a18'
-                    }}>
-                      {val}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <tbody>
+                  {[
+                    ['Average WPM', liveMetrics.avgWPM],
+                    ['WPM Variance', liveMetrics.wpmDelta],
+                    ['Backspace rate', liveMetrics.backspaceRate?.toFixed(3)],
+                    ['Average pause', liveMetrics.avgPause > 0 ? (liveMetrics.avgPause / 1000).toFixed(1) + 's' : '—'],
+                    ['Repetitions', liveMetrics.repetitionCount],
+                    ['Avg Sentences', liveMetrics.avgSentenceLength],
+                    ['Total Msgs', liveMetrics.msgCount],
+                    ['Time code', liveMetrics.timeOfDay],
+                    ['Duration', fmtTimer(Math.floor((liveMetrics.sessionDuration || 0) / 1000))],
+                  ].map(([label, val]) => (
+                    <tr key={label} className="border-b border-outline-variant/10 last:border-0 hover:bg-surface-container/50 transition-colors">
+                      <td className="py-2.5 px-1 text-on-surface-variant font-medium text-xs">{label}</td>
+                      <td className={`py-2.5 px-1 text-right font-semibold tabular-nums text-sm ${label === 'WPM Variance' && val < 0 ? 'text-warning' : 'text-on-surface'}`}>
+                        {val}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
-          {/* Privacy note */}
-          <div style={{
-            fontSize: 11, color: '#888780', lineHeight: 1.5,
-            padding: '8px 0'
-          }}>
-            We measure typing patterns to support cognitive wellness.
-            Your messages are never stored after analysis is complete.
+          <div className="text-[10px] text-outline text-center px-4 leading-relaxed bg-surface-container-high rounded-xl p-3 mb-6">
+            <strong className="block text-on-surface-variant mb-1 font-semibold space-x-1 flex items-center justify-center">
+              <span className="material-symbols-outlined text-[14px]">lock</span>
+              <span>Privacy Focused</span>
+            </strong>
+            We measure typing patterns to support cognitive wellness. Your messages are never stored permanently.
           </div>
-          </div>
-          </div>
-        </div> {/* end slide-panel */}
-
-        {/* BOTTOM PROGRESS BUTTON */}
-        <div style={{ width: '100%', marginTop: 12 }}>
-           <button onClick={() => setIsProgressOpen(true)} style={{ width: '100%', padding: 20, background: '#f5f4f0', border: '2px dashed #ccc', borderRadius: 12, fontSize: 18, color: '#5f5e5a', cursor: 'pointer', fontWeight: 600 }}>
-             View Live Metrics & Progress Report
-           </button>
         </div>
       </div>
     </div>
@@ -584,199 +537,14 @@ export default function Chat() {
 /* ───────── Metric card sub-component ───────── */
 function MetricCard({ label, value }) {
   return (
-    <div style={{
-      backgroundColor: '#f9f8f6', borderRadius: 10, padding: 14,
-      display: 'flex', flexDirection: 'column', gap: 2
-    }}>
-      <div style={{ fontSize: 26, fontWeight: 600, color: '#1a1a18', lineHeight: 1.1 }}>
+    <div className="bg-surface-container rounded-xl p-3 flex flex-col gap-1 border border-outline-variant/10 hover:shadow-sm transition-shadow">
+      <div className="text-2xl font-bold text-on-surface tracking-tight bg-clip-text text-transparent bg-gradient-to-br from-primary to-tertiary w-max">
         {value}
       </div>
-      <div style={{ fontSize: 12, color: '#888780', fontWeight: 400 }}>
+      <div className="text-[10px] font-semibold uppercase tracking-widest text-on-surface-variant/80">
         {label}
       </div>
     </div>
   )
-}
-
-/* ═══════════════════════════════════════════════
-   STYLES  (inline for zero-dependency simplicity)
-   ═══════════════════════════════════════════════ */
-const styles = {
-  page: {
-    minHeight: 'calc(100vh - 100px)',
-    padding: '12px 0',
-  },
-  // grid is now handled by CSS class .chat-grid
-  leftCol: {
-    display: 'flex',
-    flexDirection: 'column',
-    minHeight: 0,
-  },
-  rightCol: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 16,
-  },
-  card: {
-    backgroundColor: '#ffffff',
-    border: '0.5px solid rgba(0,0,0,0.12)',
-    borderRadius: 12,
-    padding: 14,
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  chatHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '14px 16px',
-    borderBottom: '1px solid rgba(0,0,0,0.08)',
-  },
-  messageList: {
-    flex: 1,
-    overflowY: 'auto',
-    padding: '16px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 14,
-    minHeight: 300,
-    maxHeight: 'calc(100vh - 360px)',
-    backgroundColor: '#faf9f7',
-  },
-  avatar: {
-    width: 26,
-    height: 26,
-    borderRadius: '50%',
-    backgroundColor: '#EEEDFE',
-    color: '#3C3489',
-    fontSize: 10,
-    fontWeight: 700,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  botBubble: {
-    backgroundColor: '#f5f4f0',
-    color: '#1a1a18',
-    padding: '18px 24px',
-    borderRadius: '16px 16px 16px 4px',
-    borderLeft: '4px solid #6d5cf7',
-    fontSize: 20,
-    lineHeight: 1.55,
-    maxWidth: 480,
-  },
-  userBubble: {
-    backgroundColor: '#E6F1FB',
-    color: '#185fa5',
-    padding: '18px 24px',
-    borderRadius: '16px 16px 4px 16px',
-    fontSize: 20,
-    lineHeight: 1.55,
-    maxWidth: 480,
-    marginLeft: 'auto',
-  },
-  timestamp: {
-    fontSize: 10,
-    color: '#aaa',
-    marginTop: 3,
-    paddingLeft: 4,
-    paddingRight: 4,
-  },
-  inputArea: {
-    padding: '12px 16px',
-    borderTop: '1px solid rgba(0,0,0,0.08)',
-  },
-  iconBtn: {
-    width: 44,
-    height: 60,
-    minWidth: 44,
-    borderRadius: 10,
-    border: 'none',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer',
-    transition: 'background-color 0.15s',
-  },
-  textarea: {
-    flex: 1,
-    fontSize: 20,
-    lineHeight: 1.5,
-    padding: '16px 20px',
-    border: '1px solid rgba(0,0,0,0.15)',
-    borderRadius: 10,
-    resize: 'none',
-    outline: 'none',
-    fontFamily: 'inherit',
-    backgroundColor: '#faf9f7',
-    minHeight: 60,
-  },
-  sendBtn: {
-    height: 60,
-    minWidth: 90,
-    backgroundColor: '#6d5cf7',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: 10,
-    fontSize: 18,
-    fontWeight: 500,
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    transition: 'opacity 0.15s',
-  },
-  hintText: {
-    fontSize: 11,
-    color: '#aaa',
-    textAlign: 'center',
-    marginTop: 6,
-    marginBottom: 0,
-  },
-  endSessionBtn: {
-    width: '100%',
-    height: 46,
-    backgroundColor: 'transparent',
-    color: '#6d5cf7',
-    border: '1.5px solid #6d5cf7',
-    borderRadius: 10,
-    fontSize: 18,
-    fontWeight: 500,
-    cursor: 'pointer',
-    transition: 'background-color 0.15s, color 0.15s',
-  },
-  processingCard: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 12,
-    justifyContent: 'center',
-    padding: '14px 16px',
-    borderTop: '1px solid rgba(0,0,0,0.06)',
-  },
-  resultCard: {
-    margin: '0 16px 16px',
-    padding: 16,
-    backgroundColor: '#faf9f7',
-    borderRadius: 10,
-    border: '1px solid rgba(0,0,0,0.08)',
-    animation: 'fadeInUp 0.4s ease-out',
-  },
-  viewReportBtn: {
-    marginTop: 10,
-    padding: '10px 20px',
-    backgroundColor: '#6d5cf7',
-    color: '#fff',
-    border: 'none',
-    borderRadius: 8,
-    fontSize: 14,
-    fontWeight: 500,
-    cursor: 'pointer',
-  },
-  metricsGrid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: 10,
-  },
 }
 
