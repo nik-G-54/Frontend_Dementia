@@ -167,6 +167,8 @@ export default function Login() {
                 type="button"
                 onClick={() => {
                   localStorage.setItem('mode', 'demo');
+                  localStorage.setItem('token', 'demo-token');
+                  localStorage.setItem('user', JSON.stringify({ name: 'Demo User', userId: 'demo-001', age: 65 }));
                   navigate('/dashboard');
                 }}
                 className="w-full bg-white text-[#001e40] border-2 border-[#001e40] font-headline font-bold text-lg py-3.5 rounded-2xl shadow-sm hover:bg-gray-50 active:scale-[0.98] transition-all flex items-center justify-center gap-3 mt-4"

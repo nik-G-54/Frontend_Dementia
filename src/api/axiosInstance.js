@@ -14,8 +14,12 @@ api.interceptors.response.use(
   response => response,
   error => {
     if (error.response && error.response.status === 401) {
-      localStorage.removeItem('token')
-      window.location.href = '/login'
+      // Don't redirect in demo mode — API calls are expected to fail
+      const mode = localStorage.getItem('mode')
+      if (mode !== 'demo') {
+        localStorage.removeItem('token')
+        window.location.href = '/login'
+      }
     }
     return Promise.reject(error)
   }
