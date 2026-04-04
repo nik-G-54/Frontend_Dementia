@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardLabel, SectionTitle } from '../components/ui/Card';
 import { cn } from '../lib/utils';
-import { Phone, Lock, ArrowRight } from 'lucide-react';
+import { Phone, Lock, ArrowRight, ArrowLeft } from 'lucide-react';
 import api from '../api/axiosInstance';
 
 export default function Login() {
@@ -21,7 +21,7 @@ export default function Login() {
       const { data } = await api.post('/auth/login', { phone, pin });
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify({ name: data.name, userId: data.userId, age: data.age }));
-      navigate('/');
+      navigate('/dashboard');
     } catch (err) {
       const msg = err.response?.data?.message || 'Could not connect to the backend server.';
       setError(msg);
@@ -52,7 +52,15 @@ export default function Login() {
 
 
       <main className="flex-grow flex items-center justify-center px-6 py-8 md:py-12 relative z-10 w-full max-w-7xl mx-auto">
-        <div className="w-full max-w-4xl grid md:grid-cols-2 bg-white rounded-2xl overflow-hidden mx-auto" style={{ boxShadow: '0 40px 100px -20px rgba(0, 30, 64, 0.12)' }}>
+        <div className="w-full max-w-4xl mx-auto">
+          <button
+            onClick={() => navigate('/')}
+            className="flex items-center gap-2 text-[#075fab] font-semibold text-sm mb-4 hover:text-[#001e40] transition-colors group"
+          >
+            <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
+            Back to Home
+          </button>
+        <div className="w-full grid md:grid-cols-2 bg-white rounded-2xl overflow-hidden" style={{ boxShadow: '0 40px 100px -20px rgba(0, 30, 64, 0.12)' }}>
           
           {/* Left Side: Visual Welcome */}
           <div className="hidden md:flex flex-col justify-center items-center p-8 bg-gradient-to-br from-[#001e40] to-[#003366] text-white relative overflow-hidden">
@@ -168,6 +176,7 @@ export default function Login() {
             </div>
             
           </div>
+        </div>
         </div>
       </main>
       

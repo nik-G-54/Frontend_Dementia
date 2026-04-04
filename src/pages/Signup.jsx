@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardLabel, SectionTitle, MiniLabel } from '../components/ui/Card';
 import { cn } from '../lib/utils';
-import { User, Phone, Lock, Calendar, GraduationCap, Mail, ArrowRight } from 'lucide-react';
+import { User, Phone, Lock, Calendar, GraduationCap, Mail, ArrowRight, ArrowLeft } from 'lucide-react';
 import api from '../api/axiosInstance';
 
 export default function Signup() {
@@ -40,7 +40,7 @@ export default function Signup() {
       });
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify({ name: data.name, userId: data.userId, age: data.age }));
-      navigate('/');
+      navigate('/dashboard');
     } catch (err) {
       const msg = err.response?.data?.message || 'Could not connect to the backend server.';
       setError(msg);
@@ -69,7 +69,15 @@ export default function Signup() {
       ></div>
 
       <main className="flex-grow flex items-center justify-center px-4 py-4 md:py-6 relative z-10 w-full max-w-7xl mx-auto">
-        <div className="w-full max-w-5xl grid lg:grid-cols-5 bg-white rounded-2xl overflow-hidden mx-auto" style={{ boxShadow: '0 40px 100px -20px rgba(0, 30, 64, 0.12)' }}>
+        <div className="w-full max-w-5xl mx-auto">
+          <button
+            onClick={() => navigate('/')}
+            className="flex items-center gap-2 text-[#075fab] font-semibold text-sm mb-4 hover:text-[#001e40] transition-colors group"
+          >
+            <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
+            Back to Home
+          </button>
+        <div className="w-full grid lg:grid-cols-5 bg-white rounded-2xl overflow-hidden" style={{ boxShadow: '0 40px 100px -20px rgba(0, 30, 64, 0.12)' }}>
           
           {/* Left Side: Visual Welcome - Using 2 columns out of 5 to give form more space */}
           <div className="hidden lg:flex lg:col-span-2 flex-col justify-center items-center p-6 bg-gradient-to-br from-[#001e40] to-[#003366] text-white relative overflow-hidden">
@@ -297,6 +305,7 @@ export default function Signup() {
             </div>
             
           </div>
+        </div>
         </div>
       </main>
       
