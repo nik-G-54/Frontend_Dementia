@@ -70,7 +70,7 @@ export default function TargetPracticeGame({ onGameOver }) {
   const avgSpeed = times.length > 0 ? Math.round(times.reduce((a, b) => a + b, 0) / times.length) : 0;
 
   return (
-    <div className="w-full flex-grow relative overflow-hidden bg-[#faf8ff] rounded-2xl min-h-[700px] flex flex-col mx-auto border border-[#c1c6d7]/10">
+    <div className="w-full flex-grow relative overflow-hidden bg-[#faf8ff] rounded-2xl min-h-[550px] flex flex-col mx-auto border border-[#c1c6d7]/10">
       
       {/* Game Header Overlay */}
       <div className="absolute top-8 left-1/2 -translate-x-1/2 z-10 w-full max-w-2xl px-6 opacity-90 pointer-events-none">
@@ -116,14 +116,14 @@ export default function TargetPracticeGame({ onGameOver }) {
       </div>
 
       {/* Interaction Zone */}
-      <div className="flex-grow flex items-center justify-center relative p-6 md:p-12" style={{ cursor: 'crosshair' }} onClick={() => {
+      <div className="flex-grow flex items-stretch justify-center relative p-6 md:p-12 mt-20 md:mt-24" style={{ cursor: 'crosshair' }} onClick={() => {
          // Miss logic could be added here if desired. For now, it stays strictly identical logic to origin.
       }}>
         {/* Background Texture/Gradient for focus */}
         <div className="absolute inset-0 z-0 opacity-20 pointer-events-none" style={{ background: "radial-gradient(circle at 50% 50%, #eaedff 0%, #faf8ff 70%)" }}></div>
         
         {/* The Central Zone (Restricted Area) */}
-        <div className="w-full h-full max-w-5xl max-h-[700px] border border-[#c1c6d7]/10 rounded-xl relative overflow-hidden bg-[#f2f3ff]/30 backdrop-blur-sm shadow-inner group">
+        <div className="w-full min-h-[350px] sm:min-h-[450px] lg:min-h-[500px] max-w-5xl border border-gray-300/30 rounded-xl relative overflow-hidden bg-[#f2f3ff]/30 backdrop-blur-sm shadow-inner group">
           {/* Default Decorative Subtle Crosshairs inside box */}
           <div className="absolute top-1/2 left-0 w-full h-[1px] bg-[#c1c6d7]/5 pointer-events-none group-hover:bg-[#0058bf]/5 transition-colors"></div>
           <div className="absolute left-1/2 top-0 h-full w-[1px] bg-[#c1c6d7]/5 pointer-events-none group-hover:bg-[#0058bf]/5 transition-colors"></div>

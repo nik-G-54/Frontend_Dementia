@@ -1,5 +1,6 @@
 export { default as LandingNavbar }    from './LandingNavbar';
 export { default as HeroSection }      from './HeroSection';
+export { default as UserFlowSection }  from './UserFlowSection';
 export { default as FeatureCard }      from './FeatureCard';
 export { default as EcosystemSection } from './EcosystemSection';
 export { default as JourneySection }   from './JourneySection';

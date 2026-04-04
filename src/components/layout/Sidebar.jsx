@@ -15,14 +15,14 @@ export function Sidebar() {
   const navItems = [
     { name: 'Dashboard', path: '/dashboard', icon: 'dashboard' },
     { name: 'Games',     path: '/games',     icon: 'extension' },
-    { name: 'Reports',   path: '/reports',   icon: 'assessment' },
     { name: 'Chat',      path: '/chat',      icon: 'forum' },
+    { name: 'Reports',   path: '/reports',   icon: 'assessment' },
   ];
 
   return (
     <aside className="h-screen w-20 fixed left-0 top-0 z-50 bg-slate-50 dark:bg-slate-900 flex flex-col items-center py-8">
       <div className="mb-10">
-        <span className="text-xl font-bold text-blue-700 dark:text-blue-400">MV</span>
+        <img src="/logo.jpeg" alt="Manasveda Logo" className="w-10 h-10 object-cover rounded-full shadow-sm" />
       </div>
       <nav className="flex flex-col items-center gap-8 w-full">
         {navItems.map((item) => {

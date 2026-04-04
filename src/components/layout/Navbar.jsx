@@ -24,7 +24,7 @@ export function Sidebar() {
     <aside className="h-screen w-20 fixed left-0 top-0 z-50 bg-slate-50 flex flex-col items-center py-8 border-r border-slate-100">
       {/* Logo */}
       <div className="mb-10">
-        <span className="text-xl font-bold text-blue-700">MV</span>
+        <img src="/logo.jpeg" alt="Manasveda Logo" className="w-10 h-10 object-cover rounded-full shadow-sm" />
       </div>
 
       {/* Nav Items */}

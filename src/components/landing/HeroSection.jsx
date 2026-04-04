@@ -52,30 +52,7 @@ export default function HeroSection({ onStartAssessment, onLearnMore }) {
             </button>
           </div>
 
-          {/* Social Proof */}
-          <div className="mt-12 flex items-center gap-6">
-            <div className="flex -space-x-3">
-              <img
-                alt="User"
-                className="w-10 h-10 rounded-full border-2 border-white object-cover"
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuBRuHQGVnDhuLKKqh9wtq2DZTToxCxd4gU_RzUhDlGtYdxz2KnCLk6yH0P1YeBqK8KRIMwnPQgmpg4WMelzsJPd0yAt0urmFzkFkxoyR6e1P443k_fikFEFqZ-mer7LgBXpOcJX0WHUt0IBO4IlYjyNYLePD4riW_DgpOyqKrQFAG0Kj6INvk_Idv6eE4CAtUXarm-PLvXlTxP-leK6WWwq7x-gyIN26mzQ4C1wqE6HYQoYK8oay2onXXHfDasDhiEYmb9R6ZgOchg"
-              />
-              <img
-                alt="User"
-                className="w-10 h-10 rounded-full border-2 border-white object-cover"
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuAGAM7DoKVOr5-O-JEp4s5lv0NPS0SyXrG4pxmKPPDH5JIXpbF7SDgnt2BNzorErljLnN0IAkHxEol6TKGg8r8-KX6JwF_uPP1ykmHL9MzVLRmpSId_nmXjD20LFIOLhUzXE4iuL2aL3M62G__iSZFVOHHQl3Mlf7VsAHpCQc8Kt3ILHgJ5wlkXOGpxCRSE9v8t_Xn_H7wE-G2d37nRMwhvgqFuIlupGCgWg6CqfpnUQHfd7rM-to2yXwlMKgAMvd5Sd7f1TEFrEq0"
-              />
-              <div
-                className="w-10 h-10 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-bold"
-                style={{ background: 'var(--ls-secondary-container, #86f2e4)', color: '#006f66' }}
-              >
-                +50k
-              </div>
-            </div>
-            <p className="text-sm font-medium" style={{ color: 'var(--ls-on-surface-variant)' }}>
-              Trusted by users &amp; neurological professionals worldwide.
-            </p>
-          </div>
+
         </div>
 
         {/* ---- Right: Visual ---- */}

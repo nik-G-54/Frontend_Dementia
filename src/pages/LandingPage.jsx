@@ -7,6 +7,7 @@ import {
   HeroSection,
   EcosystemSection,
   JourneySection,
+  UserFlowSection,
   CTASection,
   LandingFooter,
 } from '../components/landing';
@@ -35,6 +36,7 @@ export default function LandingPage() {
 
       <main style={{ paddingTop: '5rem' }}>
         <HeroSection onStartAssessment={goLogin} onLearnMore={goScience} />
+        <UserFlowSection />
         <EcosystemSection />
         <JourneySection />
         <CTASection onStartTest={goLogin} />

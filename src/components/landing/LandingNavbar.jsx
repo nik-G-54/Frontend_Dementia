@@ -35,10 +35,8 @@ export default function LandingNavbar({ onLogin, onGetStarted }) {
       }`}
     >
       {/* Logo */}
-      <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
-        <span className="material-symbols-outlined text-3xl" style={{ color: 'var(--ls-primary)' }}>
-          psychology
-        </span>
+      <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
+        <img src="/logo.jpeg" alt="Manasveda Logo" className="w-10 h-10 object-cover rounded-full border-2 border-primary" />
         <span className="text-2xl font-bold tracking-tight" style={{ color: '#1e40af' }}>
          Manasveda
         </span>
