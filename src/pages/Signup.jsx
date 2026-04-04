@@ -88,7 +88,7 @@ export default function Signup() {
             </div>
             <div className="relative z-10 text-center space-y-3">
                <div className="max-w-[60%] max-h-50 mx-auto bg-white/10 backdrop-blur-md p-2 shadow-inner rounded-2xl flex items-center justify-center overflow-hidden">
-                 <img alt="CogGuard Brand" className="w-full h-auto max-h-48 object-contain rounded-xl" src="/WhatsApp%20Image%202026-04-03%20at%2000.22.30.jpeg"/>
+                 <img alt="CogGuard Brand" className="w-full h-auto max-h-48 object-contain rounded-xl" src="/logo.jpeg"/>
               </div>
               <div className="space-y-2 px-2">
                 <h2 className="font-headline font-extrabold text-2xl tracking-tight">Join Us!</h2>
