@@ -4,7 +4,7 @@ import api from '../api/axiosInstance';
 
 const demoData = {
   today: {
-    todayScore: 72,
+    todayScore: 0,
     overallScore: 68,
     progress: 72
   },
@@ -153,7 +153,7 @@ export default function Dashboard() {
               <span className="text-3xl font-bold">{displayData.today.todayScore}</span>
               {!isEmpty && (
                 <span className="text-secondary text-sm font-bold flex items-center mb-1">
-                  <span className="material-symbols-outlined text-sm">trending_up</span> 2%
+                  <span className="material-symbols-outlined text-sm">trending_up</span> 0%
                 </span>
               )}
             </div>
