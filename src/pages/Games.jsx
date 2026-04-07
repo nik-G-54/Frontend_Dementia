@@ -90,9 +90,20 @@ const GAME_STYLES = `
 /* ─── API helpers ─── */
 const BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 const getToken = () => localStorage.getItem("token") || "";
-const GAME_TO_SCORE_ID = {
-  reaction: "reaction", number: "number",
-  verbal: "colorWord", chimp: "wordScramble",
+const TEST_TYPE_MAP = {
+  reaction: "word_scramble",
+  number: "memory_mosaic",
+  verbal: "word_garden",
+  chimp: "path_finder",
+  target: "color_word"
+};
+
+const GAME_SCORE_MAP = {
+  reaction: "reaction",
+  number: "number",
+  verbal: "colorWord",
+  chimp: "sequence",
+  target: "wordScramble"
 };
 
 async function apiPost(path, body) {
@@ -210,12 +221,12 @@ function ResultScreen({ game, result, onPlayAgain, onGoBack, onNext }) {
     (async () => {
       try {
         await apiPost("/sessions/game", {
-          testType: GAME_TO_SCORE_ID[game.id] || "reaction",
+          testType: TEST_TYPE_MAP[game.id] || "color_word",
           score: Math.min(1, result.score / 20), timeTaken: result.duration || 10000,
           errors: result.errors || 0, hesitationGaps: [],
         });
         await apiPost("/game-scores", {
-          gameId: GAME_TO_SCORE_ID[game.id] || game.id,
+          gameId: GAME_SCORE_MAP[game.id] || "reaction",
           score: result.score, errors: result.errors || 0, level: result.level || 1,
           ...(result.accuracy !== undefined && { accuracy: result.accuracy }),
           ...(result.reactionTime !== undefined && { reactionTime: result.reactionTime }),
@@ -501,8 +512,8 @@ function NumberMemoryGame({ onGameOver }) {
     
     // ML fallback/placeholder insight
     apiGet("/dashboard").then(res => {
-        if(res && res.data) {
-           if(res.data.aiSummary) setAiInsight(res.data.aiSummary);
+        if(res && res.latestRisk) {
+           if(res.latestRisk.explanation) setAiInsight(res.latestRisk.explanation);
         }
     }).catch(()=>{});
 

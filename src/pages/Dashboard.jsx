@@ -53,18 +53,146 @@ export default function Dashboard() {
 
       api.get('/dashboard')
         .then(res => {
-          if (res.data && Object.keys(res.data).length > 0) {
-            setData({
-              today: {
-                todayScore: res.data.todayScore || 0,
-                overallScore: res.data.overallScore || 0,
-                progress: res.data.progress || 0
-              },
-              weekly: res.data.weekly || [],
-              distribution: res.data.distribution || { focus: 0, memory: 0, logic: 0 },
-              risk: res.data.risk || { level: "Low", value: 0 },
-              aiSummary: res.data.aiSummary || "We need more data to generate insights."
+          if (res.data) {
+            const d = res.data;
+            const latestRisk = d.latestRisk || {};
+            const trendData = d.trendData || [];
+            const gameHistory = d.gameHistory || [];
+            const typingTrend = d.typingTrend || [];
+
+            // 1. Calculate Today's Score (Average of all games played TODAY)
+            let todayScore = 0;
+            const now = new Date();
+            const todayGames = gameHistory.filter(g => {
+                const gameDate = new Date(g.completedAt);
+                return gameDate.getDate() === now.getDate() && 
+                       gameDate.getMonth() === now.getMonth() && 
+                       gameDate.getFullYear() === now.getFullYear();
             });
+
+            if (todayGames.length > 0) {
+              let todayTotal = 0;
+              todayGames.forEach(g => todayTotal += g.score);
+              todayScore = Math.round((todayTotal / todayGames.length) * 100);
+            } else if (gameHistory.length > 0) {
+              // Fallback to highest most recent score if they haven't explicitly played today
+              todayScore = Math.round(gameHistory[0].score * 100);
+            }
+
+            // 2. Calculate Overall Score (Average of all recent games)
+            let totalScore = 0;
+            gameHistory.forEach(g => totalScore += g.score);
+            const overallScore = gameHistory.length > 0 
+                ? Math.round((totalScore / gameHistory.length) * 100) 
+                : 0;
+
+            // 3. Progress (difference between today's score and their historical overall average)
+            let progress = 0;
+            if (overallScore > 0) {
+              progress = todayScore - overallScore;
+            } else {
+              progress = todayScore;
+            }
+
+            // 4. Weekly line chart (Group gameHistory chronologically by exactly 7 days of the week)
+            const dailyBucket = {};
+            gameHistory.forEach(g => {
+                const d = new Date(g.completedAt);
+                const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+                // We keep track by dayName. If multiple games exist on the same day, we average them.
+                if (!dailyBucket[dayName]) dailyBucket[dayName] = { sum: 0, count: 0 };
+                dailyBucket[dayName].sum += g.score * 100;
+                dailyBucket[dayName].count += 1;
+            });
+
+            const weekly = [];
+            // Generate the exact last 7 days leading up to today to properly connect to the graph X axis
+            for (let i = 6; i >= 0; i--) {
+                const date = new Date(now);
+                date.setDate(now.getDate() - i);
+                const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+                
+                if (dailyBucket[dayName]) {
+                    // Populate with real backend avg for that day
+                    weekly.push({ day: dayName, score: Math.round(dailyBucket[dayName].sum / dailyBucket[dayName].count) });
+                } else {
+                    // If no games played that day, baseline is 0
+                    weekly.push({ day: dayName, score: 0 });
+                }
+            }
+
+            // 5. Cognitive Distribution (categorizing game scores)
+            let focus = 0, memory = 0, logic = 0;
+            let fCount = 0, mCount = 0, lCount = 0;
+            
+            gameHistory.forEach(g => {
+                const s = g.score * 100;
+                if (g.testType === 'color_word' || g.testType === 'word_garden') {
+                    focus += s; fCount++;
+                } else if (g.testType === 'memory_mosaic') {
+                    memory += s; mCount++;
+                } else {
+                    logic += s; lCount++;
+                }
+            });
+
+            const distribution = {
+                focus: fCount ? Math.round(focus / fCount) : 0,
+                memory: mCount ? Math.round(memory / mCount) : 0,
+                logic: lCount ? Math.round(logic / lCount) : 0,
+            };
+
+            // Calculate exact percentages adding up to 100% for the donut chart
+            const totalDist = distribution.focus + distribution.memory + distribution.logic;
+            let finalDist = { focus: 0, memory: 0, logic: 0 };
+            if (totalDist > 0) {
+                finalDist = {
+                    focus: Math.round((distribution.focus / totalDist) * 100),
+                    memory: Math.round((distribution.memory / totalDist) * 100),
+                    logic: Math.round((distribution.logic / totalDist) * 100)
+                };
+            }
+
+            // 6. Risk Level
+            let riskValue = 0;
+            if (latestRisk.compositeRiskScore !== undefined && latestRisk.compositeRiskScore !== null) {
+                riskValue = Math.round(latestRisk.compositeRiskScore * 100);
+            } else {
+                // If there's no actual snapshot, calculate a placeholder risk from the overallScore just so the circle isn't empty!
+                riskValue = overallScore > 0 ? Math.max(10, 100 - overallScore) : 0;
+            }
+
+            const risk = {
+                level: latestRisk.riskLevel || (overallScore > 70 ? 'Low' : overallScore > 40 ? 'Medium' : 'Pending'),
+                value: riskValue,
+                statusText: latestRisk.riskLevel ? latestRisk.riskLevel : (overallScore > 0 ? 'Baseline' : 'Optimum'),
+                subText: latestRisk.explanation ? "Risk analyzed from recent sessions." : "Analyze data to find stressors."
+            };
+
+            // 7. Active Days for Calendar
+            const activeSet = new Set();
+            trendData.forEach(t => activeSet.add(new Date(t.date).getDate()));
+            gameHistory.forEach(g => activeSet.add(new Date(g.completedAt).getDate()));
+            typingTrend.forEach(t => activeSet.add(new Date(t.recordedAt).getDate()));
+            const activeDays = Array.from(activeSet);
+            
+            // Check if user has practically NO data
+            if (!latestRisk.compositeRiskScore && gameHistory.length === 0) {
+              setData(null); // Triggers empty state view cleanly
+            } else {
+              setData({
+                today: {
+                  todayScore,
+                  overallScore,
+                  progress
+                },
+                weekly,
+                distribution: finalDist,
+                risk,
+                aiSummary: latestRisk.explanation || "Complete your first test session to generate AI-driven insights.",
+                activeDays
+              });
+            }
           } else {
             setData(null); // Empty state
           }
@@ -84,7 +212,7 @@ export default function Dashboard() {
     today: { todayScore: 0, overallScore: 0, progress: 0 },
     weekly: [],
     distribution: { focus: 0, memory: 0, logic: 0 },
-    risk: { level: "Low", value: 0 },
+    risk: { level: "Low", value: 0, statusText: "Optimum", subText: "Start your first test to see insights." },
     aiSummary: "Start your first test to see insights."
   };
 
@@ -184,10 +312,13 @@ export default function Dashboard() {
               </div>
             </div>
             <div className="flex items-end gap-2">
-              <span className="text-3xl font-bold">{displayData.today.progress}%</span>
+              <span className="text-3xl font-bold">{Math.abs(displayData.today.progress)}%</span>
               {!isEmpty && (
-                <span className="text-secondary text-sm font-bold flex items-center mb-1">
-                  <span className="material-symbols-outlined text-sm">check_circle</span> stable
+                <span className={`text-sm font-bold flex items-center mb-1 ${displayData.today.progress > 0 ? 'text-primary' : displayData.today.progress < 0 ? 'text-error' : 'text-secondary'}`}>
+                  <span className="material-symbols-outlined text-sm">
+                    {displayData.today.progress > 0 ? 'trending_up' : displayData.today.progress < 0 ? 'trending_down' : 'check_circle'}
+                  </span> 
+                  &nbsp;{displayData.today.progress > 0 ? 'improving' : displayData.today.progress < 0 ? 'declining' : 'stable'}
                 </span>
               )}
             </div>
@@ -346,15 +477,17 @@ export default function Dashboard() {
               <svg className="w-full h-full transform rotate-180">
                 <circle cx="48" cy="48" fill="transparent" r="40" stroke="#e2e7ff" strokeDasharray="125 251" strokeWidth="8"/>
                 {(!isEmpty) && (
-                  <circle cx="48" cy="48" fill="transparent" r="40" stroke={displayData.risk.level.includes("Low") ? "#006a61" : "#ba1a1a"} strokeDasharray={`${displayData.risk.value * 2.5} 251`} strokeWidth="8"/>
+                  <circle cx="48" cy="48" fill="transparent" r="40" stroke={displayData.risk.level.includes("Low") || displayData.risk.level === 'Pending' ? "#006a61" : "#ba1a1a"} strokeDasharray={`${displayData.risk.value * 2.5} 251`} strokeWidth="8"/>
                 )}
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center mt-2">
-                <span className="text-lg font-bold text-secondary">{isEmpty ? 'N/A' : 'Optimum'}</span>
+                <span className={`text-sm font-bold ${displayData.risk.level.includes("Low") || displayData.risk.level === 'Pending' ? 'text-secondary' : 'text-error'}`}>
+                   {isEmpty ? 'N/A' : displayData.risk.statusText}
+                </span>
               </div>
             </div>
           </div>
-          <p className="text-xs text-on-surface-variant">No cognitive stressors detected.</p>
+          <p className="text-xs text-on-surface-variant">{isEmpty ? 'No cognitive stressors detected.' : displayData.risk.subText}</p>
         </div>
       </aside>
     </>
